@@ -10,6 +10,20 @@ Install on your phone in 5 minutes (same way as Sadhana 180):
 
 Installing gives Hisaab its own icon and long-press shortcuts (Add expense, Ask Hisaab, Add income, Lend & borrow, Bills due).
 
+## New in 2.0
+- **One-line entries, typed or spoken.** The box at the top of Home takes a whole entry in one line: type or say "450 Swiggy yesterday on card" and the amount, shop, category, date and account are filled in for you. Check it and tap Save. It understands "kal", "aaj", "parso", "3 days ago", "on 5th", "12 oct", weekdays, "8pm", "1.5k", "2 lakh", "cash", "card", "UPI" and your account names, "received 50000 salary", "atm withdrawal 3000", "paid card bill 20000" and #tags. Put several in one line ("chai 30 and auto 80, lunch 250") and each one opens in turn, or tap **Save all**. Tap the mic to speak (Chrome on Android).
+- **Split a bill.** On a new entry, tap **Split bill** to share one payment between categories, for example ₹2,500 at DMart as ₹1,800 Groceries and ₹700 Household. The rest stays in the first category.
+- **Trips and tags.** **Trip tag** on an entry adds a tag such as "Goa trip". Start **trip mode** (More › Trips & tags, or the Trips button on Home) with a name and an end date, and every new entry is tagged until then. Tap a tag to see its total, the spend per day, a split by category and every entry.
+- **Last month in review.** In the first 10 days of a month, Home shows a card for last month: earned, spent, saved, the biggest changes, and what went over budget. Open any month's review from Analysis.
+- **Month calendar.** Each day shows how much you spent (darker means more spent), with a dot on days a bill is due. Tap a day to see its entries. No-spend days are counted. Open it from Home or the calendar button on Transactions.
+- **Net worth over time.** The Net worth card shows the change this month and a small chart; Analysis shows the full chart for the last 12 months.
+- **Subscriptions.** Lists every subscription and repeating bill, with the monthly and yearly cost. Hisaab also finds ones you have not set up as bills (Netflix, Spotify, gym and so on) from your entries.
+- **Warranties.** Tap **Warranty** on a purchase (6 months to 5 years, or your own date). Home reminds you 30 days before it ends, and More › Warranties lists them all. Attach the bill photo to the same entry so it is handy for a claim.
+- **Cash check.** Count the cash in your wallet, type it in, and Hisaab shows the difference. One tap adds the gap as a "Cash check" expense (or income, if you have more than Hisaab thinks), or corrects the opening balance instead. It works for bank accounts too.
+- **Loan prepayment planner.** Pick a loan (or type one in), add a one-time prepayment or extra each month, and see the interest saved and how many months earlier it ends, or switch to see how much lower the EMI would be if you keep the same end date.
+- **Customise Home.** At the bottom of Home, tap **Customise Home** to hide sections or move them up and down.
+- **New look.** Bolder colours, larger text and more space between sections.
+
 ## Sign in with Google
 More › the card at the top (or tap the profile name under "Hisaab" on Home) › **Sign in with Google**. Hisaab then saves your data, every profile included, to your own Google Drive (folder "Hisaab Backups"). On a new phone or laptop, open Hisaab, tap **Sign in with Google to bring my data back**, and everything returns.
 - The first time needs the one-time Google setup described under "Where your data lives" (about 5 minutes on a laptop). On another device, just paste the same Client ID: copy it from More › Profiles & sign-in › Copy Client ID.
@@ -82,14 +96,14 @@ Long-press the Hisaab icon for **Add expense, Ask Hisaab, Add income, Lend & bor
 Press and hold any entry on Home or Transactions, then tap more entries. The bar at the bottom shows the total, for example "₹6,068 · 3 selected". Tap a date heading to select that whole day. Use the buttons to copy the total or delete the selected entries. On the Transactions tab you can also tap the tick-box button at the top to start.
 
 ## Today and the last 7 days
-Home shows today's entries with today's total, then each of the last 7 days with that day's total. "Daily average" is how much you spent per day this month.
+Home shows today's entries with today's total, then each of the last 7 days with that day's total. "Per day" is how much you spent per day this month.
 
 ## Protection against clearing data
 Hisaab keeps your data inside Chrome, so clearing Chrome's **storage / site data** erases it. Clearing the **cache** is safe.
 Once a day, Hisaab saves a safety copy to your **Downloads** folder (Hisaab-backup-DATE.json). If your data is ever erased, open Hisaab, tap **Restore my data** and pick the newest file. You can switch this off in More › Backup & restore. Old copies can be deleted from Downloads any time.
 
 ## Shorter Home page
-Tap any section heading (Quick add, Accounts, Running EMIs, Today and others) to fold it to one line. Hisaab remembers what you folded. Analysis and Budgets work the same way.
+Use **Customise Home** at the bottom of Home to hide sections or change their order. You can also tap any section heading (Quick add, Accounts, Running EMIs, Today and others) to fold it to one line. Hisaab remembers what you folded. Analysis and Budgets work the same way.
 
 ## Laptop: mini window and shortcuts
 Open Hisaab in Chrome or Edge on your laptop (install it from the address bar for its own window). Click the small window icon at the top of Home, or press **M**, to open a **mini window that stays on top** of everything else. Type the amount, pick a category, and press **Enter**. Today's spending and the month's total update as you go. The mini window closes when you close Hisaab, so keep Hisaab open, even minimised.
