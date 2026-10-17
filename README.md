@@ -10,6 +10,14 @@ Install on your phone in 5 minutes (same way as Sadhana 180):
 
 Installing gives Hisaab its own icon and long-press shortcuts (Add expense, Ask Hisaab, Add income, Lend & borrow, Bills due).
 
+## New in 2.3: a knowledge base behind one-line entries
+One-line entries are now read against a built-in knowledge base of about 1,900 Indian everyday words and names:
+- **About 1,430 things people buy and pay for**, in English, Hindi, Marathi and Hinglish (samosa, cutting chai, kanda, istri, light bill, school fees, agarbatti, traffic challan…), each linked to its category and sub-category.
+- **About 425 shops, apps and services** (Swiggy, DMart, Uber, Jio, Adani Electricity, Apollo, PVR, IRCTC, LIC, Groww…). General stores like DMart, Amazon and Blinkit are marked, so there the item decides the category: "amazon 1299 shoes" goes to Clothing, "flipkart phone" to Electronics.
+- **Income words** (salary, bonus, incentive, refund, cashback, FD interest, rent received…).
+How a line is read: amount, date and account first; then the longest matching phrases ("chicken biryani", "local train pass"); the shop goes to Paid to and the thing bought to Notes; a specific shop decides the category, otherwise the main item does ("doctor fees" → Doctor). Small spelling slips ("samossa", "biriyani") are understood.
+**Your own history is part of the knowledge base:** the shops you have used and the words you have written in Notes, with the categories you gave them, count before the built-in list. Any correction you save is remembered for that sentence.
+
 ## New in 2.2: smarter one-line entries
 - **Shop and item are kept apart.** "idli 50 from Ramesh stall" fills Paid to **Ramesh Stall** and Notes **Idli**. Repeated words and words like local and nearby are dropped, so "coconut water 90 cash local coconut water" becomes **Coconut Water**, ₹90, Cash, Fruits & Vegetables.
 - **It learns from you.** If you change what was filled in (say, Paid to "Coconut vendor") and save, the same words fill in your version every time after that.

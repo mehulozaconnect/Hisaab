@@ -900,7 +900,7 @@ body.listening .qb-mic{background:var(--expense);color:#fff;animation:pulse 1s i
 
 <script>
 'use strict';
-const APP_VERSION = '2.2.0';
+const APP_VERSION = '2.3.0';
 
 /* ---------------- helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
@@ -4013,15 +4013,22 @@ function stepFrom(d, b, day) {
 const lumpyBill = b => b.freq === 'custom' ? (b.unit === 'year' || (b.unit === 'month' && (parseInt(b.every, 10) || 1) > 1)) : (b.freq !== 'monthly' && b.freq !== 'weekly');
 
 /* ---------------- one-line entries: "450 Swiggy yesterday on card" ---------------- */
-const QE_FILL = /\b(spent|spend|paid|pay|paying|for|on|at|to|rs|rs\.|rupees?|rupaye|inr|bought|buy|purchase[d]?|of|the|a|an|my|in|via|using|with|by|me|i|gave|give|kharcha|ka|ki|ke|through|from|worth|bill|amount|got|get)\b/g;
-const QE_SNACK = /\b(ganne ka ras|nimbu ?pani|ice ?creams?|pav ?bhaji|breakfast|pani ?puri|sugarcane|bun maska|vada ?pav|wada ?pav|kachoris?|pakod[ae]s?|sandwich(?:es)?|biscuits?|golgappe?|sev ?puri|parathas?|uttapam|samosas?|pakoras?|bhajias?|cutting|khakhra|burgers?|vadapav|idl[iy]s?|sheera|nashta|dabeli|jalebi|thepla|dhokla|pizzas?|sweets?|mithai|dosas?|misal|maggi|momos?|frank(?:ie|y)|rolls?|chips|chaat|lassi|juice|kulfi|puffs?|cakes?|pastr(?:y|ies)|dosa|medu|vada|wada|poha|upma|bhel)\b/;
+const QE_FILL = /\b(spent|spend|paid|pay|paying|for|on|at|to|rs|rs\.|rupees?|rupaye|inr|bought|buy|purchase[d]?|of|the|a|an|my|in|via|using|with|by|me|i|gave|give|kharcha|ka|ki|ke|through|from|worth|amount|got|get)\b/g;
+const QE_SNACK = /\b(cutting chai|masala chai|green tea|cold coffee|snacks|coffee|chai|tea|ganne ka ras|nimbu ?pani|ice ?creams?|pav ?bhaji|breakfast|pani ?puri|sugarcane|bun maska|vada ?pav|wada ?pav|kachoris?|pakod[ae]s?|sandwich(?:es)?|biscuits?|golgappe?|sev ?puri|parathas?|uttapam|samosas?|pakoras?|bhajias?|cutting|khakhra|burgers?|vadapav|idl[iy]s?|sheera|nashta|dabeli|jalebi|thepla|dhokla|pizzas?|sweets?|mithai|dosas?|misal|maggi|momos?|frank(?:ie|y)|rolls?|chips|chaat|lassi|juice|kulfi|puffs?|cakes?|pastr(?:y|ies)|dosa|medu|vada|wada|poha|upma|bhel)\b/;
 const QE_FRUIT = /\b(tender coconut|coconut water|nariyal ?pani|pomegranate|watermelon|vegetables?|pineapple|coriander|coconuts?|nariyal|bananas?|mangoes|oranges?|tarbooz|veggies|dhaniya|fruits?|apples?|mangos?|papaya|grapes|santra|chikoo|onions?|tomato(?:es)?|potato(?:es)?|bhindi|lemons?|anaar|guava|sabzi|sabji|pyaaz|palak|methi|nimbu|kele|aloo|aam)\b/;
+const QE_EVERYDAY = [[/\b(milk|doodh|dahi|curd|butter|buttermilk|chaas)\b/, 'Food & Dining', 'Milk & Dairy'], [/\b(flowers?|phool|gajra|agarbatti|incense|diya|prasad|pooja items?|puja items?|camphor|kapoor)\b/, 'Pooja & Donations', 'Pooja Samagri'],
+  [/\b(mandir|temple)\b/, 'Pooja & Donations', 'Temple'], [/\b(donation|daan|charity)\b/, 'Pooja & Donations', 'Donations'], [/\b(medicines?|tablets?|dawai|dawa|chemist|pharmacy|syrup)\b/, 'Health', 'Medicines'], [/\b(doctor|consultation|clinic)\b/, 'Health', 'Doctor'],
+  [/\b(maid|bai|kaamwali|cook|driver|watchman|nanny|aaya|ayah|gardener|mali)\b/, 'Home', 'Household Help'], [/\b(istri|ironing|press wala|dhobi|laundry)\b/, 'Home', 'Household Help'], [/\b(plumber|electrician|carpenter|repair)\b/, 'Home', 'Repairs'],
+  [/\b(haircut|salon|parlou?r|shaving|barber)\b/, 'Shopping', 'Personal Care'], [/\b(local train|train pass|metro|monorail)\b/, 'Transport', 'Train / Metro'], [/\b(bus|best bus)\b/, 'Transport', 'Bus'], [/\b(parking|toll)\b/, 'Transport', 'Parking & Toll'],
+  [/\b(recharge)\b/, 'Bills & Utilities', 'Mobile Recharge'], [/\b(light bill|electricity|bijli)\b/, 'Bills & Utilities', 'Electricity'], [/\b(gas cylinder|cylinder|png bill)\b/, 'Bills & Utilities', 'Gas Cylinder / PNG'],
+  [/\b(stationery|notebooks?|pens?|pencils?)\b/, 'Education', 'Books & Stationery'], [/\b(toys?)\b/, 'Family & Kids', 'Toys & Games'], [/\b(gifts?)\b/, 'Family & Kids', 'Gifts'], [/\b(movie|cinema|pvr|inox)\b/, 'Entertainment', 'Movies']];
+const qeItem = t => { for (const re of [QE_FRUIT, QE_SNACK, QE_MEAL, QE_GROC]) { const m = t.match(re); if (m) return m[0]; } for (const [re] of QE_EVERYDAY) { const m = t.match(re); if (m) return m[0]; } return null; };
 const QE_VENDOR = /\b(local|nearby|roadside|vendor|wala|wale|waala|bhaiya|bhaiyya|uncle|aunty|didi|thela|tapri|stall|stand)\b/g;
 const qeCap = w => String(w).replace(/\s+/g, ' ').trim().replace(/\b\w/g, c => c.toUpperCase());
 const qeDedupe = r => { const seen = new Set(); return r.split(' ').filter(w => { if (!w || /^\d/.test(w)) return !!w; if (seen.has(w)) return false; seen.add(w); return true; }).join(' '); };
 const QE_MEAL = /\b(biryani|canteen|dinner|tiffin|dining|lunch|thali|meals?|dabba|khana|mess|dine)\b/;
 const QE_GROC = /\b(groceries|grocery|chawal|cheeni|ration|kirana|masala|paneer|sugar|bread|atta|rice|daal|eggs?|ande|ghee|dal|oil)\b/;
-const QE_INC = /\b(received|recieved|receive|got paid|credited|salary|income|earned|refund|refunded|cashback|bonus|dividend|interest received)\b/;
+const QE_INC = /\b(fd interest|rd interest|interest credited|interest earned|received|recieved|receive|got paid|credited|salary|income|earned|refund|refunded|cashback|bonus|dividend|interest received)\b/;
 const QE_TRF = /\b(transfer|transferred|moved|move|withdrew|withdrawn|withdrawal|atm|deposited|deposit|card bill|credit card bill|cc bill)\b/;
 const QE_DOW = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 const micOK = () => 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
@@ -4049,7 +4056,7 @@ function qeAccounts(q, type) {
     const escR = w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), wordsOf = a => a.name.toLowerCase().split(/[\s\-\/]+/).filter(w => w.length >= 3 && !GEN.test(w));
     for (let round = 0; round < 2; round++) {
       let best = null, bs = 0;
-      for (const a of accs) { if (found.includes(a)) continue; const hit = wordsOf(a).filter(w => new RegExp(`\\b${escR(w)}\\b`).test(q)).length; if (!hit) continue;
+      for (const a of accs) { if (found.includes(a)) continue; if (a.type === 'loan' && !/\b(loan|emi)\b/.test(q)) continue; const hit = wordsOf(a).filter(w => new RegExp(`\\b${escR(w)}\\b`).test(q)).length; if (!hit) continue;
         const sc = hit * 10 + (a.type === 'credit' && /\b(card|cc)\b/.test(q) ? 3 : 0) + (a.type === 'bank' && /\b(bank|account|a\/c|upi)\b/.test(q) ? 2 : 0) - wordsOf(a).length * .1; if (sc > bs) { bs = sc; best = a; } }
       if (!best) break; if (!found.includes(best)) found.push(best);
       for (const w of wordsOf(best)) q = q.replace(new RegExp(`\\b${escR(w)}\\b`, 'g'), ' ');
@@ -4083,7 +4090,8 @@ function parseQuick(raw) {
   const AMT = '(\\d+(?:\\.\\d{1,2})?)\\s*(k|thousand|lakhs?|lacs?)?';
   m = q.match(new RegExp(`(?:\\brs\\.?|\\brupees?|\\brupaye|\\binr)\\s*${AMT}\\b`)) || q.match(new RegExp(`\\b${AMT}\\s*(?:rs\\b\\.?|rupees?\\b|rupaye\\b|inr\\b|\\/-)`)) || q.match(/(?:\brs\.?\s*)?(\d+(?:\.\d{1,2})?)\s*(k|thousand|lakhs?|lacs?)?\b(?:\/-)?/);
   if (m) { let v = +m[1]; if (m[2]) v *= /^k|thousand/.test(m[2]) ? 1000 : 100000; out.amountStr = String(round2(v)); q = q.replace(m[0], ' '); }
-  if (QE_INC.test(q)) out.type = 'income'; else if (QE_TRF.test(q)) out.type = 'transfer';
+  const paidSalary = /\b(maid|bai|cook|driver|watchman|staff|servant|helper|nanny|aaya|ayah|kaamwali|gardener|mali)\b.{0,15}\b(salary|pagar)\b|\b(salary|pagar) (?:to|for|of|paid)\b|\bpaid\b.{0,20}\bsalary\b/.test(q);
+  if (paidSalary) { out.type = 'expense'; q = q.replace(/\b(salary|pagar)\b/g, ' '); out.salaryPaid = true; } else if (QE_INC.test(q)) out.type = 'income'; else if (QE_TRF.test(q)) out.type = 'transfer';
   const isAtm = /\batm\b|withdr/.test(q), isCardBill = /card bill|cc bill|credit card bill/.test(q);
   const [accs, q3] = qeAccounts(q, out.type); q = q3;
   if (out.type === 'expense' && accs.length >= 2 && /\b(?:to|into)\b/.test(q)) out.type = 'transfer'; // "1000 from cash to rbl"
@@ -4098,28 +4106,15 @@ function parseQuick(raw) {
   if (out.accountId || accs.length || lastAcc) q = q.replace(/\b(?:credit card|debit card|card|cc|wallet)\b/g, ' ');
   if (out.type === 'income') for (const [re, cn, sn] of KW) { if (!re.test(q)) continue; const c = S.categories.find(x => x.type === 'income' && !x.archived && x.name === cn); if (c) { out.catId = c.id; out.subId = (c.subs.find(x => x.name === sn) || {}).id || ''; if (/bonus/.test(q)) out.subId = (c.subs.find(x => x.name === 'Bonus') || {}).id || out.subId; break; } }
   if (out.type === 'income' && !out.catId && /\bbonus\b/.test(q)) { const c = S.categories.find(x => x.type === 'income' && x.name === 'Salary'); if (c) { out.catId = c.id; out.subId = (c.subs.find(x => x.name === 'Bonus') || {}).id || ''; } }
+  if (out.type === 'income' && /\b(fd|rd|fixed deposit|recurring deposit)\b/.test(q)) { const c = S.categories.find(x => x.type === 'income' && /interest/i.test(x.name)); const sb = c && c.subs.find(x => /fd/i.test(x.name)); if (sb) { out.catId = c.id; out.subId = sb.id; } }
   q = q.replace(new RegExp(QE_INC.source, 'g'), ' ');
   // what is left is the shop or the thing
   let rest = qeDedupe(q.replace(QE_FILL, ' ').replace(/[^\p{L}\p{N}&' .-]/gu, ' ').replace(/\s+/g, ' ').trim());
   out.qeKey = out.type + ':' + normKey(rest.replace(QE_VENDOR, ' '));
-  const known = [...new Set(S.txns.filter(t => t.payee && t.type === out.type).map(t => t.payee.trim()))].sort((a, b) => b.length - a.length);
-  const kp = known.find(p => { const n = p.toLowerCase(); return n.length >= 3 && (` ${rest} `.includes(` ${n} `) || (rest.length >= 3 && n.startsWith(rest))); });
-  if (kp) { out.payee = kp; rest = (` ${rest} `).replace(` ${kp.toLowerCase()} `, ' ').trim(); const lc = learnedCat(kp, out.type); if (lc) { out.catId = lc.catId; out.subId = lc.subId || ''; } }
-  if (!out.catId && out.type === 'expense') { const src0 = ' ' + (out.payee + ' ' + rest).toLowerCase() + ' '; const fc = S.categories.find(c => c.type === 'expense' && !c.archived && c.name === 'Food & Dining');
-    const pick = n => { const sb = fc && fc.subs.find(x => x.name === n); if (sb) { out.catId = fc.id; out.subId = sb.id; } };
-    if (fc) { if (QE_FRUIT.test(src0)) pick('Fruits & Vegetables'); else if (QE_SNACK.test(src0)) pick('Snacks & Tea'); else if (QE_MEAL.test(src0)) pick('Restaurants'); else if (QE_GROC.test(src0)) pick('Groceries'); } }
-  if (!out.catId && out.type !== 'transfer') { // everyday words: petrol, fruits, auto, chai…
-    const src = ' ' + (out.payee + ' ' + rest).toLowerCase() + ' ';
-    for (const [re, kind, name] of ASK_SYN) { if (!re.test(src)) continue; for (const c of S.categories.filter(c => c.type === out.type)) { if (kind === 'sub') { const s = c.subs.find(x => x.name.toLowerCase() === name.toLowerCase()); if (s) { out.catId = c.id; out.subId = s.id; break; } } else if (c.name.toLowerCase() === name.toLowerCase()) { out.catId = c.id; break; } } if (out.catId) { const w = (src.match(re) || [''])[0].trim(); if (!out.payee && /^(netflix|hotstar|spotify|irctc|fastag|prime video|zomato|swiggy)$/.test(w)) out.payee = w.replace(/\b\w/g, c => c.toUpperCase()); rest = src.replace(re, ' ').trim(); break; } }
-    if (!out.catId) for (const c of S.categories.filter(c => c.type === out.type)) { const s = c.subs.find(x => x.name.length >= 3 && src.includes(' ' + x.name.toLowerCase() + ' ')); if (s) { out.catId = c.id; out.subId = s.id; break; } if (c.name.length >= 3 && src.includes(' ' + c.name.toLowerCase() + ' ')) { out.catId = c.id; break; } }
-  }
-  if (!out.payee && rest && out.type === 'expense') { const im = rest.match(QE_FRUIT) || rest.match(QE_SNACK) || rest.match(QE_MEAL) || rest.match(QE_GROC);
-    if (im) { const item = im[0]; const left0 = (' ' + rest + ' ').split(' ' + item + ' ').join(' ').replace(/\b(local|nearby|roadside)\b/g, ' ').replace(/\s+/g, ' ').trim(), left = left0.replace(QE_VENDOR, ' ').replace(/\s+/g, ' ').trim();
-      const isItem = w => QE_FRUIT.test(w) || QE_SNACK.test(w) || QE_MEAL.test(w) || QE_GROC.test(w);
-      if (left0 !== left && left0.length >= 3) { out.payee = qeCap(left0); out.notes = qeCap(item); } // "fruit wala", "ramesh stall"
-      else if (left.length >= 3 && !isItem(left)) { out.payee = qeCap(left); out.notes = qeCap(item); }
-      else out.payee = qeCap(item); rest = ''; } }
-  if (!out.payee && rest) { out.payee = rest.replace(/\s+/g, ' ').trim().replace(/\b\w/g, c => c.toUpperCase()).slice(0, 60); if (!out.catId && out.type !== 'transfer') { const lc = learnedCat(out.payee, out.type); if (lc) { out.catId = lc.catId; out.subId = lc.subId || ''; } } }
+  { const U = kbUnderstand(rest, out.type); // the knowledge base reads who was paid, what was bought and the category
+    if (!out.payee) out.payee = U.payee; if (!out.notes) out.notes = U.notes;
+    if (out.type !== 'transfer' && U.catId && (!out.catId || out.type === 'expense')) { out.catId = U.catId; out.subId = U.subId; } out.by = U.by;
+    if (out.notes && normKey(out.notes) === normKey(out.payee)) out.notes = ''; }
   if (out.payee && /^(and|or)$/i.test(out.payee)) out.payee = '';
   const LRN = (S.qeLearn || {})[out.qeKey]; // you corrected this phrase before: use your version
   if (LRN && out.qeKey.length > out.type.length + 2) { out.payee = LRN.payee || out.payee; out.notes = LRN.notes ?? out.notes; if (catById(LRN.catId)) { out.catId = LRN.catId; out.subId = LRN.subId || ''; } out.learned = true; }
@@ -4133,6 +4128,203 @@ function quickBarHTML() {
   return `<div class="qbar"><span class="qb-ic">${ic('sparkle', 18)}</span><input type="text" id="qeIn" placeholder="Type: 450 Swiggy yesterday on card" autocomplete="off" aria-label="Type an entry in one line">${micOK() ? `<button class="qb-mic" data-act="qeMic" aria-label="Say an entry">${ic('mic', 20)}</button>` : ''}<button class="qb-go" data-act="qeGo" aria-label="Fill in the entry">${ic('send', 18)}</button></div>`;
 }
 let QE_LIST = [];
+/* ---------------- Hisaab knowledge base: what Indian households spend on, and where ----------------
+   Items are things you buy (they go to Notes); brands are shops and services (they go to Paid to).
+   ":g" marks a general store that sells many kinds of things, so the item decides the category there. */
+const KB_ITEMS = {
+  'Food & Dining>Snacks & Tea': 'tea|chai|cutting chai|cutting|masala chai|kadak chai|adrak chai|green tea|lemon tea|black tea|coffee|filter coffee|cold coffee|cappuccino|latte|espresso|snacks|nashta|breakfast|idli|idly|dosa|masala dosa|uttapam|medu vada|vada|wada|vada pav|wada pav|vadapav|pav bhaji|misal|misal pav|usal|poha|kanda poha|upma|sheera|sabudana khichdi|sabudana vada|samosa|kachori|pakoda|pakora|bhajiya|bhaji|kanda bhaji|batata vada|sandwich|grilled sandwich|bombay sandwich|maggi|noodles|momos|momo|frankie|kathi roll|roll|biscuit|biscuits|cookies|chips|wafers|namkeen|farsan|chakli|dabeli|pani puri|panipuri|golgappa|puchka|bhel|bhel puri|sev puri|dahi puri|ragda pattice|chaat|aloo tikki|jalebi|fafda|dhokla|khandvi|khaman|thepla|khakhra|lassi|juice|fresh juice|mosambi juice|orange juice|sugarcane juice|sugarcane|ganne ka ras|nimbu pani|shikanji|lemonade|soda|cold drink|soft drink|coke|pepsi|sprite|thums up|limca|frooti|maaza|red bull|energy drink|water bottle|bisleri|mineral water|ice cream|kulfi|gola|falooda|milkshake|shake|smoothie|burger|pizza|puff|veg puff|cake|pastry|muffin|donut|brownie|sweets|mithai|ladoo|laddu|barfi|kaju katli|gulab jamun|rasgulla|rasmalai|halwa|peda|modak|chocolate|candy|toffee|chewing gum|popcorn|corn|bhutta|chana|peanuts|singdana|moongphali|paratha|aloo paratha|bun maska|bun|croissant|tiffin snacks|sabudana|egg roll|omelette|anda bhurji|bread omelette',
+  'Food & Dining>Restaurants': 'lunch|dinner|brunch|thali|meal|meals|biryani|biriyani|pulao|fried rice|manchurian|chinese|south indian|north indian|punjabi|mughlai|tandoori|kebab|kabab|shawarma|tikka|butter chicken|paneer tikka|dal makhani|naan|roti|chapati|rice plate|fish thali|seafood|pasta|restaurant|hotel food|dining|dine out|eating out|buffet|canteen|mess|dhaba|food court|treat|party food|team lunch|office lunch',
+  'Food & Dining>Food Delivery': 'food delivery|online food|food order|ordered food|home delivery',
+  'Food & Dining>Groceries': 'groceries|grocery|ration|kirana|atta|wheat flour|maida|besan|rava|sooji|rice|basmati|chawal|dal|daal|toor dal|moong dal|chana dal|masoor dal|urad dal|rajma|chole|kabuli chana|oil|cooking oil|sunflower oil|mustard oil|groundnut oil|ghee|sugar|cheeni|jaggery|gur|salt|namak|masala|spices|haldi|turmeric|mirchi powder|chilli powder|jeera|cumin|rai|mustard seeds|hing|garam masala|tea powder|tea leaves|coffee powder|poha packet|oats|cornflakes|muesli|bread|brown bread|pav|eggs|egg|anda|ande|paneer|tofu|chicken|mutton|fish|prawns|meat|sauce|ketchup|jam|honey|pickle|achar|papad|noodles packet|pasta packet|dry fruits|almonds|badam|cashew|kaju|raisins|kishmish|walnuts|dates|khajur|peanut butter|vinegar|baking soda|yeast|cereal|frozen food|ready to eat|instant mix|biscuits packet|soap|detergent|surf|washing powder|dishwash|vim|harpic|phenyl|toilet cleaner|floor cleaner|lizol|colin|tissue|tissues|toilet paper|garbage bags|aluminium foil|cling film|matchbox|candles|mosquito coil|good knight|all out|shampoo|toothpaste|toothbrush|handwash|sanitizer|household items|monthly ration|kitchen items',
+  'Food & Dining>Milk & Dairy': 'milk|doodh|toned milk|full cream milk|curd|dahi|yogurt|yoghurt|butter|cheese|buttermilk|chaas|chhaas|cream|malai|khoa|mawa|shrikhand|amul|milk packet|milk bill|dairy|doodhwala',
+  'Food & Dining>Fruits & Vegetables': 'fruit|fruits|vegetable|vegetables|veggies|sabzi|sabji|bhaji pala|coconut water|tender coconut|nariyal pani|coconut|nariyal|banana|kela|kele|apple|seb|mango|aam|papaya|grapes|angoor|orange|santra|mosambi|sweet lime|watermelon|tarbooz|muskmelon|kharbuja|pomegranate|anaar|guava|peru|amrood|chikoo|sapota|pineapple|ananas|pear|strawberry|kiwi|dragon fruit|custard apple|sitaphal|jamun|lychee|plum|cherry|berries|avocado|onion|onions|pyaaz|kanda|tomato|tamatar|potato|aloo|batata|bhindi|okra|palak|spinach|methi|dhaniya|coriander|kothimbir|pudina|mint|curry leaves|kadi patta|lemon|lemons|nimbu|limbu|ginger|adrak|garlic|lehsun|chilli|green chilli|mirchi|capsicum|shimla mirch|cabbage|patta gobi|cauliflower|phool gobi|gobi|brinjal|baingan|vangi|cucumber|kheera|kakdi|carrot|gajar|beetroot|radish|mooli|peas|matar|beans|french beans|gawar|cluster beans|drumstick|shevga|bottle gourd|lauki|dudhi|bitter gourd|karela|ridge gourd|turai|pumpkin|kaddu|lady finger|corn cob|sweet corn|mushroom|broccoli|lettuce|zucchini|sweet potato|shakarkand|yam|suran|arbi|raw banana|raw mango|kairi|amla|tamarind|imli',
+  'Transport>Fuel': 'petrol|diesel|fuel|cng|gas filling|ev charging|charging|full tank|tank full',
+  'Transport>Auto / Cab': 'auto|rickshaw|autorickshaw|tuktuk|cab|taxi|kaali peeli|kali peeli|bike taxi|ride|share auto|cab fare|auto fare|taxi fare',
+  'Transport>Train / Metro': 'local train pass|local train ticket|local train|train pass|local pass|season ticket|metro|metro card|metro recharge|monorail|suburban train|local ticket|platform ticket',
+  'Transport>Bus': 'bus|bus ticket|bus pass|st bus|state transport|bus fare',
+  'Transport>Parking & Toll': 'parking|toll|toll tax|fastag recharge|fastag|valet',
+  'Transport>Vehicle Service': 'car service|bike service|servicing|car wash|bike wash|puncture|tyre|tyres|battery|oil change|engine oil|car repair|bike repair|garage|mechanic|car insurance|bike insurance|puc|pollution check|vehicle insurance|wiper|car accessories|helmet',
+  'Bills & Utilities>Electricity': 'light|electricity|electricity bill|light bill|bijli|bijli bill|power bill|mseb|mahavitaran|adani electricity|tata power|best electricity|bses|torrent power',
+  'Bills & Utilities>Mobile Recharge': 'recharge|mobile recharge|phone recharge|prepaid recharge|postpaid|postpaid bill|mobile bill|phone bill|data pack|talktime|sim',
+  'Bills & Utilities>Internet': 'internet|wifi|wi-fi|broadband|fibre|fiber|internet bill|wifi bill|router',
+  'Bills & Utilities>Gas Cylinder / PNG': 'gas|gas cylinder|cylinder|lpg|png|png bill|piped gas|mahanagar gas|mgl|indane|hp gas|bharat gas|gas bill|gas booking',
+  'Bills & Utilities>Water': 'water bill|water tax|water tanker|tanker|water can|water jar|drinking water|aquaguard service|ro service',
+  'Bills & Utilities>DTH / Cable': 'dth|cable|cable tv|set top box|dish tv|tv recharge|dth recharge',
+  'Home>Rent': 'rent|house rent|room rent|flat rent|pg rent|hostel rent|rent deposit|security deposit|brokerage',
+  'Home>Society Maintenance': 'maintenance|society maintenance|society charges|society bill|society|maintenance charges|sinking fund|property tax',
+  'Home>Repairs': 'repair|repairs|plumber|electrician|carpenter|painter|painting|pest control|ac service|ac repair|fridge repair|washing machine repair|ro repair|geyser repair|tap|leakage|waterproofing|locksmith|key duplicate',
+  'Home>Household Help': 'maid|bai|kaamwali|kamwali|cook|maharaj|driver|watchman|security guard|nanny|aaya|ayah|gardener|mali|cleaner|car cleaner|car washer|istri|press|ironing|presswala|dhobi|laundry|dry clean|dry cleaning|helper|house help|domestic help|caretaker|tiffin service|dabbawala|garbage collection|kachra',
+  'Home>Furniture & Decor': 'furniture|sofa|bed|mattress|table|chair|wardrobe|almirah|cupboard|curtains|bedsheet|bedsheets|pillow|cushion|carpet|rug|decor|decoration|painting frame|photo frame|lamp|showpiece|plants|plant|gamla|flower pot|wall clock|mirror',
+  'Shopping>Clothing': 'clothes|clothing|shirt|t-shirt|tshirt|tee|jeans|trousers|pants|kurta|kurti|saree|sari|dress|top|skirt|leggings|salwar|dupatta|lehenga|sherwani|suit|blazer|jacket|sweater|hoodie|shorts|innerwear|undergarments|vest|banian|socks|nightwear|pyjama|nightsuit|shoes|shoe|sandals|chappal|slippers|sneakers|heels|footwear|belt|cap|tie|scarf|raincoat|umbrella|tailor|stitching|alteration|school dress',
+  'Shopping>Electronics': 'phone|mobile|smartphone|iphone|laptop|tablet|ipad|charger|cable charger|earphones|headphones|earbuds|airpods|speaker|smartwatch|watch|tv|television|camera|power bank|pendrive|hard disk|memory card|mouse|keyboard|printer|ink|cartridge|monitor|router device|trimmer|hair dryer|iron box|mixer|grinder|microwave|oven|fridge|refrigerator|washing machine|ac|air conditioner|cooler|fan|geyser|water purifier|vacuum cleaner|induction|bulb|led bulb|tube light|extension board|batteries|cell|remote',
+  'Shopping>Home & Kitchen': 'utensils|bartan|kitchen|cookware|pressure cooker|cooker|kadai|tawa|pan|plates|glasses|bottle|tiffin box|lunch box|container|containers|bucket|mug|broom|jhadu|mop|pocha|dustbin|hanger|hangers|storage box|bedsheet set|towel|towels|doormat|kitchen items|crockery|cutlery|knife|gas stove|chulha|flask|thermos|home items|plastic items',
+  'Shopping>Personal Care': 'haircut|hair cut|salon|parlour|parlor|beauty parlour|spa|facial|waxing|threading|manicure|pedicure|barber|shaving|shave|massage|cosmetics|makeup|lipstick|kajal|cream|face wash|moisturizer|sunscreen|perfume|deo|deodorant|body lotion|hair oil|hair colour|hair dye|razor|sanitary pads|pads|diapers|grooming|nail cutter|comb|skincare|lotion',
+  'Shopping>Online Shopping': 'online shopping|online order|order online|parcel|courier|delivery charges',
+  'Health>Doctor': 'doctor|dr|consultation|consulting fee|clinic|opd|checkup|check up|dentist|dental|eye checkup|physio|physiotherapy|vaccination|vaccine|injection|hospital|surgery|admission|pediatrician|gynaecologist|ent|skin doctor|dermatologist|teleconsult|ambulance',
+  'Health>Medicines': 'medicine|medicines|tablet|tablets|capsules|syrup|dawai|dawa|chemist|pharmacy|medical store|medical|ointment|bandage|band aid|crocin|dolo|paracetamol|vicks|eye drops|inhaler|insulin|vitamins|supplements|protein powder|ors|thermometer|bp machine|glucometer|strips|mask|masks',
+  'Health>Lab Tests': 'blood test|lab test|test|tests|pathology|lab|x-ray|xray|sonography|ultrasound|mri|ct scan|ecg|thyroid test|sugar test|full body checkup|health checkup|diagnostic|diagnostics|report',
+  'Health>Gym & Fitness': 'gym|gym fees|fitness|yoga|yoga class|zumba|swimming|swimming pool|personal trainer|trainer|sports|badminton|cricket kit|football|cycle|cycling|running shoes|marathon|aerobics|pilates',
+  'Education>School Fees': 'school fees|school fee|fees|tuition fee|admission fee|term fees|college fees|exam fees|school|college|university|bus fees|school bus|van fees|school van',
+  'Education>Books & Stationery': 'books|book|notebook|notebooks|stationery|pen|pens|pencil|pencils|eraser|sharpener|crayons|colours|colors|drawing book|geometry box|school bag|bag for school|project|project material|chart paper|xerox|photocopy|printout|print out|lamination|exam pad|text books|textbooks|novel|magazine|newspaper',
+  'Education>Tuition & Classes': 'tuition|tuitions|coaching|classes|class|tutor|home tutor|music class|dance class|drawing class|art class|abacus|swimming class|karate|skating|chess class|hobby class|extra class|online class',
+  'Education>Courses': 'course|online course|certification|udemy|coursera|workshop|seminar|training|exam fee|exam registration|upsc|mba',
+  'Education>Uniform': 'uniform|school uniform|school shoes|tie and belt|uniform stitching',
+  'Family & Kids>Kids Activities': 'kids activity|birthday party|play area|play zone|funcity|trampoline|kids class|summer camp|picnic|school trip|excursion',
+  'Family & Kids>Toys & Games': 'toy|toys|game|games|board game|lego|puzzle|doll|ball|bat|kite|patang|balloon|balloons|video game|play station|playstation',
+  'Family & Kids>Gifts': 'gift|gifts|present|return gift|birthday gift|wedding gift|shagun|gift card|bouquet',
+  'Family & Kids>Family Support': 'parents|mummy|papa|amma|appa|family support|sent home|money to home|pocket money|allowance',
+  'Family & Kids>Celebrations': 'birthday|anniversary|party|celebration|cake cutting|wedding|marriage|function|reception|engagement|baby shower|naming ceremony|housewarming|griha pravesh',
+  'Entertainment>Movies': 'movie|movies|film|cinema|picture|movie ticket|multiplex|popcorn combo',
+  'Entertainment>OTT Subscriptions': 'ott|subscription|streaming|music subscription|youtube premium|prime membership',
+  'Entertainment>Outings': 'outing|picnic spot|park|garden|zoo|museum|aquarium|water park|amusement park|essel world|imagica|snow world|gaming zone|bowling|arcade|beach|fort|trek|trekking|day trip',
+  'Entertainment>Hobbies': 'hobby|guitar|keyboard instrument|art supplies|paints|craft|gardening|photography|books for hobby|fishing|stamp collection',
+  'Entertainment>Events': 'concert|show|standup|stand up comedy|play|drama|natak|event|event ticket|match ticket|ipl ticket|exhibition|fair|mela|garba|dandiya pass',
+  'Travel>Flights': 'flight|flights|air ticket|airfare|plane ticket|airport|baggage',
+  'Travel>Train Tickets': 'train ticket|train tickets|rail ticket|tatkal|railway ticket|express train|rajdhani|shatabdi|vande bharat|sleeper|3ac|2ac',
+  'Travel>Hotels': 'hotel|hotel stay|hotel booking|resort|homestay|lodge|guest house|room booking|stay|airbnb|villa',
+  'Travel>Holiday Expenses': 'holiday|vacation|trip|tour|sightseeing|tour guide|boat ride|houseboat|safari|entry ticket|entry fee|souvenir|travel shopping|outstation cab|travel',
+  'Travel>Visa & Docs': 'visa|passport|passport fees|travel insurance|forex|immigration',
+  'EMI & Loans>Interest & Charges': 'interest|loan interest|late payment|processing fee|foreclosure',
+  'Insurance & Investments>Life Insurance': 'life insurance|term insurance|term plan|insurance premium|premium|lic premium|policy premium|endowment',
+  'Insurance & Investments>SIP / Mutual Fund': 'sip|mutual fund|mf|elss|index fund|lumpsum',
+  'Insurance & Investments>PPF / NPS': 'ppf|nps|epf|vpf|sukanya|ssy|apy|atal pension|pension',
+  'Insurance & Investments>Stocks': 'stocks|shares|equity|ipo|demat',
+  'Insurance & Investments>Fixed Deposit': 'fd|fixed deposit|rd|recurring deposit|bonds|gold bond|sgb|digital gold|gold coin',
+  'Health>Health Insurance': 'health insurance|mediclaim|medical insurance|family floater',
+  'Pooja & Donations>Pooja Samagri': 'pooja|puja|pooja items|puja items|pooja samagri|flowers|flower|phool|phoolwala|gajra|garland|haar|mala|agarbatti|incense|dhoop|diya|diyas|ghee for diya|camphor|kapoor|kumkum|haldi kumkum|prasad|prasadam|coconut for pooja|nariyal for pooja|tulsi|durva|bel patra|rangoli|toran',
+  'Pooja & Donations>Temple': 'temple|mandir|gurudwara|church|mosque|dargah|darshan|abhishek|archana',
+  'Pooja & Donations>Donations': 'donation|daan|dakshina|charity|ngo|offering|hundi|gau seva|anna daan|zakat|tithe|beggar|alms',
+  'Pooja & Donations>Festivals': 'diwali|ganpati|ganesh|navratri|holi|rakhi|raksha bandhan|eid|christmas|durga puja|onam|pongal|makar sankranti|gudi padwa|janmashtami|dussehra|karva chauth|crackers|firecrackers|lanterns|kandil|festival',
+  'Fees & Charges>Bank Charges': 'bank charges|sms charges|annual fee|card fee|atm charges|min balance charges|cheque book',
+  'Fees & Charges>Late Fees': 'late fee|late fees|penalty|fine|overdue charges',
+  'Fees & Charges>Taxes': 'income tax|advance tax|tds|gst payment|tax',
+  'Fees & Charges>Government Fees': 'challan|traffic challan|rto|licence|license|driving licence|aadhaar|pan card|stamp duty|registration|notary|affidavit|court fee|municipal|bmc|police verification|passport police'
+};
+const KB_INCOME = {
+  'Salary>Monthly Salary': 'salary|pagar|payroll|monthly salary',
+  'Salary>Bonus': 'bonus|diwali bonus|performance bonus|joining bonus',
+  'Salary>Incentive': 'incentive|incentives|commission on sales|sales incentive|variable pay',
+  'Salary>Reimbursement': 'reimbursement|claim|expense claim|office claim|travel claim',
+  'Business>Consulting': 'consulting|consultancy|freelance|freelancing|project payment|client payment|professional fees',
+  'Business>Sales': 'sales|sale|business income|order payment',
+  'Business>Commission': 'commission|brokerage received|referral',
+  'Interest & Dividends>Savings Interest': 'interest|savings interest|bank interest',
+  'Interest & Dividends>FD Interest': 'fd interest|rd interest|fd maturity',
+  'Interest & Dividends>Dividends': 'dividend|dividends',
+  'Refunds & Cashback>Refund': 'refund|refunded|return refund|reversal',
+  'Refunds & Cashback>Cashback': 'cashback|cash back',
+  'Refunds & Cashback>Rewards': 'rewards|reward points|scratch card',
+  'Rental Income>Rent Received': 'rent received|rental income|rent from tenant|tenant rent',
+  'Gifts Received>Gift': 'gift|shagun|gift money|birthday money'
+};
+const KB_BRANDS = {
+  'Food & Dining>Food Delivery': 'Swiggy|Zomato|EatSure|Box8|Faasos|Behrouz|Rebel Foods|Magicpin|Swiggy Food',
+  'Food & Dining>Groceries': 'DMart:g|D-Mart:g|BigBasket:g|Blinkit:g|Zepto:g|Swiggy Instamart:g|Instamart:g|JioMart:g|Reliance Fresh:g|Reliance Smart:g|Smart Bazaar:g|Star Bazaar:g|Big Bazaar:g|More Supermarket:g|Spencers:g|Natures Basket:g|Nature\'s Basket:g|Ratnadeep:g|Vijetha:g|Kirana Store:g|Amazon Fresh:g|Flipkart Minutes:g|BB Now:g|Dunzo:g|Country Delight|Milkbasket|Licious|FreshToHome|Zepto Cafe',
+  'Food & Dining>Restaurants': 'McDonalds|McDonald\'s|KFC|Dominos|Domino\'s|Pizza Hut|Burger King|Subway|Haldiram|Haldirams|Bikanervala|Barbeque Nation|Mainland China|Chaayos|Starbucks|Cafe Coffee Day|CCD|Third Wave|Blue Tokai|Wow Momo|Theobroma|Copper Chimney|Saravana Bhavan|Udupi|Irani Cafe|Taco Bell|La Pinoz|Behrouz Biryani|Paradise Biryani|Burger Singh|Chai Point|Tea Villa|MTR|Naturals Ice Cream|Baskin Robbins|Amul Parlour|Kailash Parbat|Sukh Sagar|Shiv Sagar|Bademiya|Persian Darbar',
+  'Food & Dining>Milk & Dairy': 'Amul|Gokul|Mother Dairy|Nandini|Aarey|Govardhan|Chitale',
+  'Transport>Auto / Cab': 'Uber|Ola|Rapido|BluSmart|Meru|InDrive|Namma Yatri',
+  'Transport>Fuel': 'Indian Oil|IOCL|HP Petrol|HPCL|Bharat Petroleum|BPCL|Shell|Nayara|Reliance Petrol|Jio-bp',
+  'Transport>Train / Metro': 'Mumbai Metro|Delhi Metro|Namma Metro|M-Indicator|UTS',
+  'Transport>Bus': 'BEST|MSRTC|KSRTC|RedBus|AbhiBus|Zingbus|IntrCity',
+  'Transport>Parking & Toll': 'FASTag|NETC',
+  'Bills & Utilities>Mobile Recharge': 'Jio|Airtel|Vi|Vodafone|BSNL|MTNL',
+  'Bills & Utilities>Internet': 'ACT Fibernet|Hathway|Airtel Xstream|JioFiber|Jio Fiber|Excitel|Tikona|You Broadband',
+  'Bills & Utilities>Electricity': 'Adani Electricity|Tata Power|MSEDCL|Mahavitaran|BEST Electricity|BSES|Torrent Power|CESC|BESCOM|TNEB',
+  'Bills & Utilities>Gas Cylinder / PNG': 'Mahanagar Gas|MGL|Indane|HP Gas|Bharat Gas|IGL|Gujarat Gas|Adani Gas',
+  'Bills & Utilities>DTH / Cable': 'Tata Play|Tata Sky|Dish TV|Airtel Digital TV|Sun Direct|D2H|Videocon D2H',
+  'Shopping>Online Shopping': 'Amazon:g|Flipkart:g|Meesho:g|Snapdeal:g|Tata Cliq:g|Tata Neu:g|Shopsy:g',
+  'Shopping>Clothing': 'Myntra|Ajio|Westside|Zudio|Pantaloons|Max Fashion|Lifestyle|Shoppers Stop|H&M|Zara|Uniqlo|Levis|Peter England|Allen Solly|Van Heusen|Raymond|Manyavar|FabIndia|Biba|Bata|Metro Shoes|Mochi|Puma|Adidas|Nike|Skechers|Relaxo|V-Mart|Vishal Mega Mart',
+  'Shopping>Electronics': 'Croma|Reliance Digital|Vijay Sales|Apple Store|Samsung|Mi Store|OnePlus|Poorvika|Sangeetha',
+  'Shopping>Home & Kitchen': 'IKEA|Home Centre|Pepperfry|Urban Ladder|HomeTown|Prestige|Hawkins|Pigeon|Milton|Tupperware|Borosil|Ikea',
+  'Shopping>Personal Care': 'Nykaa|Purplle|Mamaearth|Lakme Salon|Naturals Salon|Jawed Habib|Enrich|Looks Salon|Urban Company|Bodycraft|VLCC|Kaya',
+  'Health>Medicines': 'Apollo Pharmacy|Apollo|MedPlus|PharmEasy|1mg|Tata 1mg|Netmeds|Wellness Forever|Noble Chemist|Frank Ross|Truemeds',
+  'Health>Lab Tests': 'Thyrocare|Dr Lal PathLabs|Lal Path Labs|Metropolis|SRL|Redcliffe|Healthians|Suburban Diagnostics|Orange Health',
+  'Health>Doctor': 'Practo|Apollo Clinic|Fortis|Kokilaben|Lilavati|Hinduja|Nanavati|Jaslok|Bombay Hospital|Breach Candy|Wockhardt|Max Hospital|Manipal Hospital|Narayana Health',
+  'Health>Gym & Fitness': 'Cult.fit|Cultfit|Gold\'s Gym|Golds Gym|Anytime Fitness|Snap Fitness|Talwalkars|Decathlon|Fitpass|HealthifyMe',
+  'Education>Courses': 'Udemy|Coursera|upGrad|Simplilearn|Great Learning|Unacademy|Byjus|BYJU\'S|Vedantu|PhysicsWallah|Physics Wallah|Toppr|LinkedIn Learning|Duolingo',
+  'Education>Books & Stationery': 'Crossword|Kitab Khana|Sapna Book House|Landmark|Classmate|Natraj',
+  'Family & Kids>Toys & Games': 'Hamleys|FirstCry|Toys R Us|Funskool',
+  'Entertainment>Movies': 'PVR|INOX|Cinepolis|BookMyShow|Movietime|Miraj',
+  'Entertainment>OTT Subscriptions': 'Netflix|Hotstar|Disney Hotstar|JioHotstar|JioCinema|Prime Video|Amazon Prime|SonyLIV|Zee5|Spotify|YouTube Premium|Apple Music|Gaana|JioSaavn|Wynk|Audible|Kindle Unlimited|Apple TV|MX Player|Voot|Alt Balaji|Sun NXT|ChatGPT|OpenAI|Claude|Anthropic|Google One|iCloud|Microsoft 365|Office 365|Canva|Notion|LinkedIn Premium|Times Prime|Swiggy One|Zomato Gold',
+  'Entertainment>Events': 'Paytm Insider|Skillbox|Zomato Live',
+  'Travel>Flights': 'IndiGo|Air India|Vistara|SpiceJet|Akasa|Akasa Air|AirAsia|Air India Express|Emirates|Qatar Airways',
+  'Travel>Train Tickets': 'IRCTC|ConfirmTkt|RailYatri|ixigo',
+  'Travel>Hotels': 'OYO|Taj|Marriott|ITC Hotels|Lemon Tree|Treebo|FabHotels|Airbnb|Zostel|Radisson|Hyatt|Novotel',
+  'Travel>Holiday Expenses': 'MakeMyTrip|MMT|Goibibo|Yatra|Cleartrip|EaseMyTrip|Thomas Cook|SOTC|Veena World|Kesari',
+  'Insurance & Investments>Life Insurance': 'LIC|HDFC Life|ICICI Prudential|ICICI Pru|SBI Life|Max Life|Tata AIA|Bajaj Allianz Life|Kotak Life|PNB MetLife|Aditya Birla Sun Life',
+  'Insurance & Investments>SIP / Mutual Fund': 'Groww|Zerodha Coin|Kuvera|Paytm Money|ET Money|INDmoney|Scripbox',
+  'Insurance & Investments>Stocks': 'Zerodha|Upstox|Angel One|5paisa|ICICI Direct|HDFC Securities|Kotak Securities',
+  'Health>Health Insurance': 'Star Health|Niva Bupa|Care Health|HDFC Ergo|ICICI Lombard|Bajaj Allianz|Aditya Birla Health|ManipalCigna|Acko',
+  'Home>Household Help': 'Urban Company Cleaning|Pronto|Snabbit',
+  'Home>Rent': 'NoBroker|NestAway|Housing.com|MagicBricks|Stanza Living|Zolo',
+  'Fees & Charges>Government Fees': 'RTO|BMC|MCGM|Passport Seva|Parivahan|UIDAI|Income Tax Dept|e-Challan'
+};
+const KB_VENDOR = new Set('local nearby roadside vendor vendors wala wale waala wali bhaiya bhaiyya bhai uncle aunty auntie didi kaka mama thela thelawala tapri stall stand cart shop store dukaan dukan seller hawker street corner gali market mandi bazaar'.split(' '));
+const KB_NOISE = new Set('local nearby roadside street corner from at the a an some few my our near outside inside opposite next ka ki ke se wala wale waala wali bill bills payment paid amount charges charge fees fee pass ticket tickets total cost price'.split(' '));
+const KB_WEAK = new Set('fees|fee|test|tests|class|service|servicing|premium|interest|sales|sale|sim|press|cream|corn|shake|treat|stay|travel|ride|report|project|charging|show|play|cell|tea leaves'.split('|'));
+let KB_IDX = null;
+const kbNorm = w => String(w).toLowerCase().replace(/[’']/g, '').replace(/[^\p{L}\p{N}&+ .-]/gu, ' ').replace(/[.-]/g, ' ').replace(/\s+/g, ' ').trim();
+function kbBuild() {
+  const idx = new Map(), singles = [];
+  const add = (term, e) => { const k = kbNorm(term); if (!k) return; const vs = [k, k.replace(/ /g, '')]; if (!k.includes(' ') && k.length > 3) { if (/ies$/.test(k)) vs.push(k.slice(0, -3) + 'y'); else if (/(ches|shes|oes)$/.test(k)) vs.push(k.slice(0, -2)); else if (/s$/.test(k) && !/ss$/.test(k)) vs.push(k.slice(0, -1)); else vs.push(k + 's'); }
+    for (const v of vs) if (!idx.has(v) || (idx.get(v).kind === 'item' && e.kind === 'brand' && e.disp.length > 3)) idx.set(v, e); if (!k.includes(' ') && k.length >= 5) singles.push([k, e]); };
+  for (const [path, list] of Object.entries(KB_ITEMS)) { const [cat, sub] = path.split('>'); list.split('|').forEach(t => add(t, { kind: 'item', type: 'expense', cat, sub, disp: t })); }
+  for (const [path, list] of Object.entries(KB_INCOME)) { const [cat, sub] = path.split('>'); list.split('|').forEach(t => add(t, { kind: 'item', type: 'income', cat, sub, disp: t })); }
+  for (const [path, list] of Object.entries(KB_BRANDS)) { const [cat, sub] = path.split('>'); list.split('|').forEach(t => { const g = t.endsWith(':g'), d = g ? t.slice(0, -2) : t; add(d, { kind: 'brand', type: 'expense', cat, sub, disp: d, general: g }); }); }
+  KB_IDX = { idx, singles };
+  return KB_IDX;
+}
+function kbEdit1(a, b) { if (Math.abs(a.length - b.length) > 1) return false; let i = 0, j = 0, e = 0; while (i < a.length && j < b.length) { if (a[i] === b[j]) { i++; j++; continue; } if (++e > 1) return false; if (a.length > b.length) i++; else if (b.length > a.length) j++; else { i++; j++; } } return e + (a.length - i) + (b.length - j) <= 1; }
+// your own history is part of the knowledge: shops you have used and things you have written in Notes
+function kbMine(type) {
+  const m = new Map();
+  for (const t of S.txns) { if (t.type !== type || !t.catId || !catById(t.catId)) continue;
+    for (const [txt, kind] of [[t.payee, 'brand'], [t.notes, 'item']]) { const k = kbNorm(txt || ''); if (!k || k.length < 3 || k.split(' ').length > 4 || /\d/.test(k)) continue; if (kind === 'brand' && k.split(' ').every(w => KB_VENDOR.has(w) || KB_NOISE.has(w))) continue;
+      const cur = m.get(k) || { kind, n: 0, by: {} }; const key = t.catId + '|' + (t.subId || ''); cur.by[key] = (cur.by[key] || 0) + 1; cur.n++; cur.disp = txt.trim(); m.set(k, cur); } }
+  for (const v of m.values()) { const [k] = Object.entries(v.by).sort((a, b) => b[1] - a[1])[0]; [v.catId, v.subId] = k.split('|'); }
+  return m;
+}
+function kbResolve(e, type) { // knowledge entry → this user's own category and sub-category
+  if (e.catId) return catById(e.catId) ? { catId: e.catId, subId: e.subId || '' } : null;
+  const cats = S.categories.filter(c => c.type === type && !c.archived); let c = cats.find(x => x.name.toLowerCase() === e.cat.toLowerCase());
+  if (c) { const sb = c.subs.find(x => x.name.toLowerCase() === e.sub.toLowerCase()); return { catId: c.id, subId: sb ? sb.id : '' }; }
+  for (const c2 of cats) { const sb = c2.subs.find(x => x.name.toLowerCase() === e.sub.toLowerCase()); if (sb) return { catId: c2.id, subId: sb.id }; }
+  c = cats.find(x => x.name.toLowerCase().includes(e.cat.toLowerCase().split(' ')[0])); return c ? { catId: c.id, subId: '' } : null;
+}
+// read the words left after amount, date and account: who was paid, what was bought, and which category
+function kbUnderstand(text, type) {
+  const K = KB_IDX || kbBuild(), mine = kbMine(type), words = kbNorm(text).split(' ').filter(Boolean), found = [], left = [];
+  for (let i = 0; i < words.length;) { let hit = null;
+    for (let n = Math.min(4, words.length - i); n >= 1 && !hit; n--) { const ph = words.slice(i, i + n).join(' ');
+      const my = mine.get(ph); if (my && (n > 1 || ph.length >= 3)) { const kb0 = K.idx.get(ph) || K.idx.get(ph.replace(/ /g, '')); hit = { n, e: { kind: kb0 && kb0.kind === 'brand' ? 'brand' : my.kind, mine: true, catId: my.catId, subId: my.subId, disp: kb0 && kb0.kind === 'brand' ? kb0.disp : my.disp, general: !!(kb0 && kb0.general) } }; break; }
+      for (const v of [ph, ph.replace(/ /g, '')]) { const e = K.idx.get(v); if (e && (e.type === type || type === 'transfer') && !(n === 1 && v.length < 2)) { hit = { n, e }; break; } } }
+    if (!hit && words[i].length >= 5 && !KB_VENDOR.has(words[i])) { const w = words[i]; const f = K.singles.find(([k, e]) => e.type === type && k[0] === w[0] && kbEdit1(k, w)); if (f) hit = { n: 1, e: f[1] }; } // small spelling slips: "samossa", "biriyani"
+    if (hit) { found.push(hit.e.kind === 'item' ? Object.assign({}, hit.e, { disp: words.slice(i, i + hit.n).join(' '), weak: KB_WEAK.has(words.slice(i, i + hit.n).join(' ')) }) : hit.e); i += hit.n; } else { left.push(words[i]); i++; } }
+  const brands = found.filter(e => e.kind === 'brand'), items = found.filter(e => e.kind === 'item');
+  const r = { payee: '', notes: '', catId: '', subId: '', by: '' };
+  const leftWords = left.filter(w => !/^(and|or|for|of|to|in|on|with|by|the)$/.test(w)), named = leftWords.filter(w => !KB_NOISE.has(w) && !KB_VENDOR.has(w));
+  const vendorish = leftWords.filter(w => KB_VENDOR.has(w) && !['local', 'nearby', 'roadside', 'street', 'corner', 'from', 'at'].includes(w));
+  // who was paid
+  if (brands.length) r.payee = brands[0].disp;
+  else if (named.length) r.payee = qeCap(leftWords.filter(w => !['local', 'nearby', 'roadside', 'from', 'at', 'the', 'a', 'an', 'my'].includes(w)).join(' '));
+  else if (vendorish.length || leftWords.some(w => ['local', 'roadside', 'street'].includes(w))) { const head = items[0] ? qeCap(items[0].disp) : ''; r.payee = vendorish.length ? qeCap((head && !['shop', 'store', 'market', 'mandi', 'stall'].includes(vendorish[0]) ? head + ' ' : '') + vendorish.join(' ')) : (head ? head + ' vendor' : 'Local vendor'); }
+  if (!brands.length && !named.length && items.length) { const it = kbNorm(items[items.length - 1].disp), rc0 = kbResolve(items[items.length - 1], type === 'transfer' ? 'expense' : type); // a shop you always use for this: "sabzi" → your "Sabzi mandi"
+    let best = null; for (const [k, v] of mine) if (v.kind === 'brand' && (k.startsWith(it + ' ') || k.endsWith(' ' + it)) && (!rc0 || v.catId === rc0.catId) && (!best || v.n > best.n)) best = v; if (best) r.payee = best.disp; }
+  // what was bought
+  const adj = items.length > 1 && items.every((e, k) => k === 0 || words.indexOf(e.disp.split(' ')[0]) === words.indexOf(items[k - 1].disp.split(' ').slice(-1)[0]) + 1);
+  const itemTxt = adj ? qeCap(items.map(e => e.disp).join(' ')) : [...new Set(items.map(e => qeCap(e.disp)))].join(', ');
+  if (!r.payee) r.payee = itemTxt; else r.notes = itemTxt;
+  // which category: a specific shop decides; at a general store, or a street vendor, the item decides
+  const spec = brands.find(e => !e.general), gen = brands.find(e => e.general);
+  const strong = items.filter(e => !e.weak), mainItem = strong.length ? strong[strong.length - 1] : items[items.length - 1];
+  const pickE = (spec && !(spec.mine && !spec.catId)) ? spec : (mainItem || gen || null);
+  if (pickE) { const rc = kbResolve(pickE, type === 'transfer' ? 'expense' : type); if (rc) { r.catId = rc.catId; r.subId = rc.subId; r.by = pickE.mine ? 'mine' : pickE.kind; } }
+  if (!r.catId && r.payee && !items.length) { const lc = learnedCat(r.payee, type); if (lc) { r.catId = lc.catId; r.subId = lc.subId || ''; r.by = 'history'; } }
+  const fix = t => qeCap(t).split(' ').map(w => { const b = K.idx.get(w.toLowerCase()); return b && b.kind === 'brand' && !b.disp.includes(' ') ? b.disp : w; }).join(' ');
+  r.payee = fix(r.payee).slice(0, 60); r.notes = r.notes ? fix(r.notes).slice(0, 120) : '';
+  return r;
+}
+
 function qeRemember(key, t) { S.qeLearn ||= {}; S.qeLearn[key] = { payee: t.payee || '', notes: t.notes || '', catId: t.catId || '', subId: t.subId || '' }; const ks = Object.keys(S.qeLearn); if (ks.length > 400) delete S.qeLearn[ks[0]]; }
 const aiQuickOn = () => !!aiKey() && S.settings.aiQuick !== false;
 function qeFind(list, name) { const n = String(name || '').toLowerCase().trim(); if (!n) return null; return list.find(x => x.name.toLowerCase() === n) || list.find(x => x.name.toLowerCase().includes(n) || n.includes(x.name.toLowerCase())) || null; }
