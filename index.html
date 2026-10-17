@@ -878,6 +878,9 @@ body.listening .qb-mic{background:var(--expense);color:#fff;animation:pulse 1s i
 .allclear svg{color:var(--income);flex:none}
 .acc.owed{opacity:.92}
 .acc.owed .b{color:var(--ink)}
+.qbar.busy{opacity:.6;pointer-events:none}
+.qbar.busy .qb-ic{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 .home-more{display:flex;align-items:center;justify-content:center;gap:4px;width:100%;padding:12px;border:0;background:none;color:var(--accent);font-weight:800;font-size:14px}
 </style>
 </head>
@@ -897,7 +900,7 @@ body.listening .qb-mic{background:var(--expense);color:#fff;animation:pulse 1s i
 
 <script>
 'use strict';
-const APP_VERSION = '2.1.2';
+const APP_VERSION = '2.2.0';
 
 /* ---------------- helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
@@ -1693,6 +1696,7 @@ async function saveTx(again) {
     if (hasCycle(ca)) { const c = cardStatus(ca); if (c.billed >= 1) msg += c.remaining >= 1 ? `. ${money(c.remaining)} of the bill is still due by ${fmtShort(c.due)}` : '. Card bill fully paid'; }
   }
   if (base.payee && base.type !== 'transfer') S.payeeMap[normKey(base.payee)] = { catId: base.catId, subId: base.subId, type: base.type };
+  if (f.qeKey && base.type !== 'transfer') qeRemember(f.qeKey, base);
   if (f.smsHash) markSeen(f.smsHash);
   if (oldReceipt) releaseReceipt(oldReceipt);
   save();
@@ -4010,9 +4014,13 @@ const lumpyBill = b => b.freq === 'custom' ? (b.unit === 'year' || (b.unit === '
 
 /* ---------------- one-line entries: "450 Swiggy yesterday on card" ---------------- */
 const QE_FILL = /\b(spent|spend|paid|pay|paying|for|on|at|to|rs|rs\.|rupees?|rupaye|inr|bought|buy|purchase[d]?|of|the|a|an|my|in|via|using|with|by|me|i|gave|give|kharcha|ka|ki|ke|through|from|worth|bill|amount|got|get)\b/g;
-const QE_SNACK = /\b(idl[iy]s?|dosas?|dosa|uttapam|medu|vada|wada|vada ?pav|wada ?pav|pav ?bhaji|misal|poha|upma|sheera|samosas?|kachoris?|pakod[ae]s?|pakoras?|bhajias?|sandwich(?:es)?|maggi|momos?|frank(?:ie|y)|rolls?|biscuits?|chips|nashta|breakfast|dabeli|pani ?puri|golgappe?|bhel|sev ?puri|chaat|jalebi|lassi|juice|nimbu ?pani|cutting|ice ?creams?|kulfi|parathas?|thepla|khakhra|dhokla|burgers?|pizzas?|puffs?|cakes?|pastr(?:y|ies)|sweets?|mithai|coconut water|nariyal ?pani|sugarcane|ganne ka ras|bun maska|vadapav)\b/;
-const QE_MEAL = /\b(lunch|dinner|thali|biryani|meals?|tiffin|dabba|canteen|mess|khana|dine|dining)\b/;
-const QE_GROC = /\b(atta|rice|chawal|dal|daal|oil|sugar|cheeni|ration|kirana|masala|groceries|grocery|eggs?|ande|bread|paneer|ghee)\b/;
+const QE_SNACK = /\b(ganne ka ras|nimbu ?pani|ice ?creams?|pav ?bhaji|breakfast|pani ?puri|sugarcane|bun maska|vada ?pav|wada ?pav|kachoris?|pakod[ae]s?|sandwich(?:es)?|biscuits?|golgappe?|sev ?puri|parathas?|uttapam|samosas?|pakoras?|bhajias?|cutting|khakhra|burgers?|vadapav|idl[iy]s?|sheera|nashta|dabeli|jalebi|thepla|dhokla|pizzas?|sweets?|mithai|dosas?|misal|maggi|momos?|frank(?:ie|y)|rolls?|chips|chaat|lassi|juice|kulfi|puffs?|cakes?|pastr(?:y|ies)|dosa|medu|vada|wada|poha|upma|bhel)\b/;
+const QE_FRUIT = /\b(tender coconut|coconut water|nariyal ?pani|pomegranate|watermelon|vegetables?|pineapple|coriander|coconuts?|nariyal|bananas?|mangoes|oranges?|tarbooz|veggies|dhaniya|fruits?|apples?|mangos?|papaya|grapes|santra|chikoo|onions?|tomato(?:es)?|potato(?:es)?|bhindi|lemons?|anaar|guava|sabzi|sabji|pyaaz|palak|methi|nimbu|kele|aloo|aam)\b/;
+const QE_VENDOR = /\b(local|nearby|roadside|vendor|wala|wale|waala|bhaiya|bhaiyya|uncle|aunty|didi|thela|tapri|stall|stand)\b/g;
+const qeCap = w => String(w).replace(/\s+/g, ' ').trim().replace(/\b\w/g, c => c.toUpperCase());
+const qeDedupe = r => { const seen = new Set(); return r.split(' ').filter(w => { if (!w || /^\d/.test(w)) return !!w; if (seen.has(w)) return false; seen.add(w); return true; }).join(' '); };
+const QE_MEAL = /\b(biryani|canteen|dinner|tiffin|dining|lunch|thali|meals?|dabba|khana|mess|dine)\b/;
+const QE_GROC = /\b(groceries|grocery|chawal|cheeni|ration|kirana|masala|paneer|sugar|bread|atta|rice|daal|eggs?|ande|ghee|dal|oil)\b/;
 const QE_INC = /\b(received|recieved|receive|got paid|credited|salary|income|earned|refund|refunded|cashback|bonus|dividend|interest received)\b/;
 const QE_TRF = /\b(transfer|transferred|moved|move|withdrew|withdrawn|withdrawal|atm|deposited|deposit|card bill|credit card bill|cc bill)\b/;
 const QE_DOW = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -4060,7 +4068,7 @@ function qeAccounts(q, type) {
 }
 function parseQuick(raw) {
   let q = ' ' + String(raw || '').toLowerCase().replace(/₹/g, ' rs ').replace(/(\d),(?=\d)/g, '$1').replace(/[!?;]/g, ' ').replace(/\s+/g, ' ') + ' ';
-  const out = { type: 'expense', amountStr: '', date: today(), accountId: '', toAccountId: '', catId: '', subId: '', payee: '', tags: [], heard: raw };
+  const out = { type: 'expense', amountStr: '', date: today(), accountId: '', toAccountId: '', catId: '', subId: '', payee: '', notes: '', tags: [], heard: raw };
   // hashtags become trip / event tags
   q = q.replace(/#([\w-]+)/g, (m, t) => { out.tags.push(t.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase())); return ' '; });
   // time like "8pm" or "at 8:30 am"
@@ -4092,20 +4100,29 @@ function parseQuick(raw) {
   if (out.type === 'income' && !out.catId && /\bbonus\b/.test(q)) { const c = S.categories.find(x => x.type === 'income' && x.name === 'Salary'); if (c) { out.catId = c.id; out.subId = (c.subs.find(x => x.name === 'Bonus') || {}).id || ''; } }
   q = q.replace(new RegExp(QE_INC.source, 'g'), ' ');
   // what is left is the shop or the thing
-  let rest = q.replace(QE_FILL, ' ').replace(/[^\p{L}\p{N}&' .-]/gu, ' ').replace(/\s+/g, ' ').trim();
+  let rest = qeDedupe(q.replace(QE_FILL, ' ').replace(/[^\p{L}\p{N}&' .-]/gu, ' ').replace(/\s+/g, ' ').trim());
+  out.qeKey = out.type + ':' + normKey(rest.replace(QE_VENDOR, ' '));
   const known = [...new Set(S.txns.filter(t => t.payee && t.type === out.type).map(t => t.payee.trim()))].sort((a, b) => b.length - a.length);
   const kp = known.find(p => { const n = p.toLowerCase(); return n.length >= 3 && (` ${rest} `.includes(` ${n} `) || (rest.length >= 3 && n.startsWith(rest))); });
   if (kp) { out.payee = kp; rest = (` ${rest} `).replace(` ${kp.toLowerCase()} `, ' ').trim(); const lc = learnedCat(kp, out.type); if (lc) { out.catId = lc.catId; out.subId = lc.subId || ''; } }
   if (!out.catId && out.type === 'expense') { const src0 = ' ' + (out.payee + ' ' + rest).toLowerCase() + ' '; const fc = S.categories.find(c => c.type === 'expense' && !c.archived && c.name === 'Food & Dining');
     const pick = n => { const sb = fc && fc.subs.find(x => x.name === n); if (sb) { out.catId = fc.id; out.subId = sb.id; } };
-    if (fc) { if (QE_SNACK.test(src0)) pick('Snacks & Tea'); else if (QE_MEAL.test(src0)) pick('Restaurants'); else if (QE_GROC.test(src0)) pick('Groceries'); } }
+    if (fc) { if (QE_FRUIT.test(src0)) pick('Fruits & Vegetables'); else if (QE_SNACK.test(src0)) pick('Snacks & Tea'); else if (QE_MEAL.test(src0)) pick('Restaurants'); else if (QE_GROC.test(src0)) pick('Groceries'); } }
   if (!out.catId && out.type !== 'transfer') { // everyday words: petrol, fruits, auto, chai…
     const src = ' ' + (out.payee + ' ' + rest).toLowerCase() + ' ';
     for (const [re, kind, name] of ASK_SYN) { if (!re.test(src)) continue; for (const c of S.categories.filter(c => c.type === out.type)) { if (kind === 'sub') { const s = c.subs.find(x => x.name.toLowerCase() === name.toLowerCase()); if (s) { out.catId = c.id; out.subId = s.id; break; } } else if (c.name.toLowerCase() === name.toLowerCase()) { out.catId = c.id; break; } } if (out.catId) { const w = (src.match(re) || [''])[0].trim(); if (!out.payee && /^(netflix|hotstar|spotify|irctc|fastag|prime video|zomato|swiggy)$/.test(w)) out.payee = w.replace(/\b\w/g, c => c.toUpperCase()); rest = src.replace(re, ' ').trim(); break; } }
     if (!out.catId) for (const c of S.categories.filter(c => c.type === out.type)) { const s = c.subs.find(x => x.name.length >= 3 && src.includes(' ' + x.name.toLowerCase() + ' ')); if (s) { out.catId = c.id; out.subId = s.id; break; } if (c.name.length >= 3 && src.includes(' ' + c.name.toLowerCase() + ' ')) { out.catId = c.id; break; } }
   }
+  if (!out.payee && rest && out.type === 'expense') { const im = rest.match(QE_FRUIT) || rest.match(QE_SNACK) || rest.match(QE_MEAL) || rest.match(QE_GROC);
+    if (im) { const item = im[0]; const left0 = (' ' + rest + ' ').split(' ' + item + ' ').join(' ').replace(/\b(local|nearby|roadside)\b/g, ' ').replace(/\s+/g, ' ').trim(), left = left0.replace(QE_VENDOR, ' ').replace(/\s+/g, ' ').trim();
+      const isItem = w => QE_FRUIT.test(w) || QE_SNACK.test(w) || QE_MEAL.test(w) || QE_GROC.test(w);
+      if (left0 !== left && left0.length >= 3) { out.payee = qeCap(left0); out.notes = qeCap(item); } // "fruit wala", "ramesh stall"
+      else if (left.length >= 3 && !isItem(left)) { out.payee = qeCap(left); out.notes = qeCap(item); }
+      else out.payee = qeCap(item); rest = ''; } }
   if (!out.payee && rest) { out.payee = rest.replace(/\s+/g, ' ').trim().replace(/\b\w/g, c => c.toUpperCase()).slice(0, 60); if (!out.catId && out.type !== 'transfer') { const lc = learnedCat(out.payee, out.type); if (lc) { out.catId = lc.catId; out.subId = lc.subId || ''; } } }
   if (out.payee && /^(and|or)$/i.test(out.payee)) out.payee = '';
+  const LRN = (S.qeLearn || {})[out.qeKey]; // you corrected this phrase before: use your version
+  if (LRN && out.qeKey.length > out.type.length + 2) { out.payee = LRN.payee || out.payee; out.notes = LRN.notes ?? out.notes; if (catById(LRN.catId)) { out.catId = LRN.catId; out.subId = LRN.subId || ''; } out.learned = true; }
   if (!out.accountId) out.accountId = defaultAccountId();
   if (out.type === 'transfer' && out.toAccountId === out.accountId) out.toAccountId = '';
   if (out.type === 'transfer' && !out.payee) out.payee = isAtm ? 'ATM withdrawal' : isCardBill ? 'Card bill' : '';
@@ -4116,8 +4133,58 @@ function quickBarHTML() {
   return `<div class="qbar"><span class="qb-ic">${ic('sparkle', 18)}</span><input type="text" id="qeIn" placeholder="Type: 450 Swiggy yesterday on card" autocomplete="off" aria-label="Type an entry in one line">${micOK() ? `<button class="qb-mic" data-act="qeMic" aria-label="Say an entry">${ic('mic', 20)}</button>` : ''}<button class="qb-go" data-act="qeGo" aria-label="Fill in the entry">${ic('send', 18)}</button></div>`;
 }
 let QE_LIST = [];
-function qeOpen(raw) {
+function qeRemember(key, t) { S.qeLearn ||= {}; S.qeLearn[key] = { payee: t.payee || '', notes: t.notes || '', catId: t.catId || '', subId: t.subId || '' }; const ks = Object.keys(S.qeLearn); if (ks.length > 400) delete S.qeLearn[ks[0]]; }
+const aiQuickOn = () => !!aiKey() && S.settings.aiQuick !== false;
+function qeFind(list, name) { const n = String(name || '').toLowerCase().trim(); if (!n) return null; return list.find(x => x.name.toLowerCase() === n) || list.find(x => x.name.toLowerCase().includes(n) || n.includes(x.name.toLowerCase())) || null; }
+async function aiParseQuick(raw) {
+  const td = today(), cats = S.categories.filter(c => !c.archived && (c.type === 'expense' || c.type === 'income'));
+  const recent = []; const seen = new Set(); for (const t of [...S.txns].sort(sortTx)) { if (!t.payee || t.type === 'transfer' || seen.has(normKey(t.payee))) continue; seen.add(normKey(t.payee)); const c = catById(t.catId); recent.push(`${t.payee} → ${c ? c.name + (t.subId ? ' > ' + subName(c, t.subId) : '') : ''}`); if (recent.length >= 40) break; }
+  const sys = `You turn one short note about money, typed or spoken by an Indian user (English, Hindi or Hinglish), into ledger entries for the Hisaab app. Today is ${td} (${['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][parseYmd(td).getDay()]}).
+Reply with JSON only, no other text: {"entries":[{"type":"expense|income|transfer","amount":number,"date":"YYYY-MM-DD","time":"HH:MM or null","account":"exact account name","to_account":"exact account name, transfers only, else null","category":"exact category name or null","subcategory":"exact sub-category name or null","paid_to":"string","note":"string","tags":[]}]}
+Rules:
+- One entry per payment. "chai 30 and auto 80" is two entries.
+- amount: the rupee amount. A 3–6 digit number after "account", "a/c", "card", "xx" or "ending" is an account number, never the amount.
+- account: pick from the user's accounts by name, bank, card name or last 4 digits. "cash" means the cash account. If none is said, use "${(accById(defaultAccountId()) || {}).name || ''}".
+- paid_to: WHO received the money: the shop, brand, vendor or person, in 1–4 words, Title Case, e.g. "Swiggy", "DMart", "Ramesh", "Coconut vendor", "Tea stall". If only the item is said and the seller is a street or local vendor, name the vendor from the item ("coconut water from a local seller" → "Coconut vendor"). Never put the account, the amount, the date or words like local/cash/card in paid_to.
+- note: WHAT was bought, short ("Coconut water", "Idli", "Petrol"), or "" if it would just repeat paid_to.
+- category/subcategory: choose the most sensible from the list for an Indian household. Coconut water, fruit and vegetables → Fruits & Vegetables; tea, coffee, snacks, idli, vada pav → Snacks & Tea; eating at a restaurant → Restaurants; Swiggy/Zomato orders → Food Delivery.
+- tags: words written with # only.
+- Dates: "kal" or "yesterday" = yesterday, "parso" = 2 days ago, weekdays mean the most recent one, today if no date.
+
+Accounts: ${activeAccounts().filter(a => a.type !== 'people').map(a => `${a.name} (${a.type}${a.last4 ? ', ends ' + a.last4 : ''})`).join('; ')}
+Expense categories: ${cats.filter(c => c.type === 'expense').map(c => `${c.name}: ${c.subs.map(x => x.name).join(', ')}`).join(' | ')}
+Income categories: ${cats.filter(c => c.type === 'income').map(c => `${c.name}: ${c.subs.map(x => x.name).join(', ')}`).join(' | ')}
+How the user usually files payees: ${recent.join('; ')}`;
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 12000);
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', signal: ctl.signal, headers: { 'content-type': 'application/json', 'x-api-key': aiKey(), 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: S.settings.aiModel || 'claude-haiku-4-5-20251001', max_tokens: 700, system: sys, messages: [{ role: 'user', content: raw }] }) });
+    const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error?.message || `Error ${r.status}`);
+    const txt = (j.content || []).filter(c => c.type === 'text').map(c => c.text).join(''); const js = JSON.parse(txt.slice(txt.indexOf('{'), txt.lastIndexOf('}') + 1));
+    const accs = activeAccounts().filter(a => a.type !== 'people');
+    return (js.entries || []).filter(e => +e.amount > 0).map(e => {
+      const type = ['income', 'transfer'].includes(e.type) ? e.type : 'expense', local = parseQuick(raw);
+      const out = { type, amountStr: String(round2(+e.amount)), date: /^\d{4}-\d\d-\d\d$/.test(e.date || '') && e.date <= addDays(td, 60) ? e.date : td, time: /^\d\d:\d\d$/.test(e.time || '') ? e.time : '', accountId: (qeFind(accs, e.account) || accById(defaultAccountId()) || {}).id || '', toAccountId: type === 'transfer' ? (qeFind(accs, e.to_account) || {}).id || '' : '',
+        catId: '', subId: '', payee: String(e.paid_to || '').slice(0, 60), notes: String(e.note || '').slice(0, 120), tags: Array.isArray(e.tags) ? e.tags.map(qeCap).filter(Boolean) : [], heard: raw, ai: true, qeKey: (js.entries.length === 1 ? local.qeKey : '') };
+      if (type !== 'transfer') { const c = qeFind(S.categories.filter(c => c.type === type && !c.archived), e.category); if (c) { out.catId = c.id; const sb = qeFind(c.subs, e.subcategory); out.subId = sb ? sb.id : ''; } }
+      if (out.notes && normKey(out.notes) === normKey(out.payee)) out.notes = '';
+      const LRN = out.qeKey && (S.qeLearn || {})[out.qeKey]; if (LRN) { out.payee = LRN.payee || out.payee; out.notes = LRN.notes ?? out.notes; if (catById(LRN.catId)) { out.catId = LRN.catId; out.subId = LRN.subId || ''; } }
+      return out; });
+  } finally { clearTimeout(timer); }
+}
+let QE_BUSY = false;
+async function qeOpen(raw) {
   raw = String(raw || '').trim(); if (!raw) return toast('Type something like “450 Swiggy yesterday on card”');
+  if (aiQuickOn() && navigator.onLine !== false) {
+    if (QE_BUSY) return; QE_BUSY = true; const bar = $('.qbar'); bar?.classList.add('busy'); toast('Understanding…', 15000);
+    try { const L = await aiParseQuick(raw); $('#toast').classList.remove('show');
+      if (L.length === 1) return qeForm(L[0]); if (L.length > 1) { QE_LIST = L; const w = openSheet(qeListHTML(), { cls: 'tall' }); w._kind = 'qelist'; return; }
+    } catch (e) { toast(e.name === 'AbortError' ? 'Claude took too long, so Hisaab filled it in by itself' : 'Could not reach Claude, so Hisaab filled it in by itself'); }
+    finally { QE_BUSY = false; bar?.classList.remove('busy'); }
+  }
+  return qeOpenLocal(raw);
+}
+function qeOpenLocal(raw) {
   const parts = qeSplit(raw);
   if (parts.length > 1) { QE_LIST = parts.map(parseQuick); const w = openSheet(qeListHTML(), { cls: 'tall' }); w._kind = 'qelist'; return; }
   const p = parseQuick(raw); qeForm(p);
@@ -4125,7 +4192,7 @@ function qeOpen(raw) {
 function qeForm(p, i) {
   if (!p.amountStr && !p.payee && !p.catId) return toast('Could not find an amount. Try “450 Swiggy yesterday”');
   const trip = tripTag(p.date), tags = [...new Set([...(p.tags || []), ...(trip ? [trip] : [])])];
-  const f = newForm(p.type, { amountStr: p.amountStr, date: p.date, time: p.time || nowTime(), accountId: p.accountId, toAccountId: p.toAccountId, catId: p.catId, subId: p.subId, payee: p.payee, tags, qeInfo: `Filled from “${p.heard}”. Check it and tap Save.`, qeIdx: i });
+  const f = newForm(p.type, { amountStr: p.amountStr, date: p.date, time: p.time || nowTime(), accountId: p.accountId, toAccountId: p.toAccountId, catId: p.catId, subId: p.subId, payee: p.payee, notes: p.notes || '', tags, qeKey: p.qeKey || '', qeInfo: p.ai ? `Understood by Claude from “${p.heard}”. Check it and tap Save.` : p.learned ? `Filled from “${p.heard}” the way you saved it last time. Check it and tap Save.` : `Filled from “${p.heard}”. Check it and tap Save.`, qeIdx: i });
   f.panel = !f.amountStr ? 'amt' : f.type === 'transfer' ? (!f.toAccountId ? 'to' : null) : (!f.catId ? 'cat' : null); if (f.panel === 'cat') f.catView = '';
   openTx(f);
 }
@@ -4140,8 +4207,8 @@ const refreshQeList = () => { const s = sheets.find(x => x.wrap._kind === 'qelis
 function qeSaveAll() {
   const n = QE_LIST.length;
   for (const p of QE_LIST) { const amt = evalAmount(p.amountStr), trip = tripTag(p.date);
-    const t = { id: uid(), type: p.type, amount: amt, date: p.date, time: p.time || nowTime(), accountId: p.accountId, toAccountId: p.type === 'transfer' ? p.toAccountId : '', catId: p.type === 'transfer' ? '' : p.catId, subId: p.type === 'transfer' ? '' : p.subId, payee: p.payee, notes: '', taxTag: '', receipt: null, tags: [...new Set([...(p.tags || []), ...(trip ? [trip] : [])])], createdAt: Date.now() };
-    if (!t.tags.length) delete t.tags; S.txns.push(t); if (t.payee && t.type !== 'transfer') S.payeeMap[normKey(t.payee)] = { catId: t.catId, subId: t.subId, type: t.type }; autoMatchBill(t); }
+    const t = { id: uid(), type: p.type, amount: amt, date: p.date, time: p.time || nowTime(), accountId: p.accountId, toAccountId: p.type === 'transfer' ? p.toAccountId : '', catId: p.type === 'transfer' ? '' : p.catId, subId: p.type === 'transfer' ? '' : p.subId, payee: p.payee, notes: p.notes || '', taxTag: '', receipt: null, tags: [...new Set([...(p.tags || []), ...(trip ? [trip] : [])])], createdAt: Date.now() };
+    if (!t.tags.length) delete t.tags; S.txns.push(t); if (t.payee && t.type !== 'transfer') S.payeeMap[normKey(t.payee)] = { catId: t.catId, subId: t.subId, type: t.type }; if (p.qeKey && t.type !== 'transfer') qeRemember(p.qeKey, t); autoMatchBill(t); }
   QE_LIST = []; save(); closeSheet(); render(); toast(`${n} entries saved`);
 }
 function qeListen(target) {
@@ -4741,9 +4808,10 @@ async function askClaude(q) {
 }
 function aiSettingsHTML() {
   const k = aiKey();
-  return head('Connect Claude (optional)') + `<div class="sh-body"><p style="margin:0">Hisaab answers most money questions by itself, on your phone, for free. Connect Claude if you also want answers to open questions, such as “Is my spending on kids reasonable?”.</p>
+  return head('Connect Claude (optional)') + `<div class="sh-body"><p style="margin:0">Hisaab answers most money questions by itself, on your phone, for free. Connect Claude if you also want answers to open questions, such as “Is my spending on kids reasonable?”, and for the smartest one-line entries.</p>
     <div class="card pad small" style="font-weight:600;display:flex;flex-direction:column;gap:6px"><span>1. Sign in at <b>console.anthropic.com</b>, add a little credit, and create an API key.</span><span>2. Paste the key below.</span><span>Only questions Hisaab can't answer go to Claude, together with a summary of your data: monthly totals by category, account balances and your last 80 entries. Each question costs about ₹1–2, billed by Anthropic. The key stays on this phone and is not included in backups.</span></div>
     <div class="field"><label for="aiKeyIn">API key</label><input type="password" id="aiKeyIn" value="${esc(k)}" placeholder="sk-ant-…" autocomplete="off"></div>
+    <button class="toggle-row" data-act="aiQuickToggle">${ic('sparkle')}<span><b>Use Claude for one-line entries</b><small>Claude reads what you type or say and fills in the shop, item, category and account. About 20 paise an entry. Without it, Hisaab fills them in by itself.</small></span><span class="switch${S.settings.aiQuick !== false ? ' on' : ''}"></span></button>
     <div class="field"><label for="aiModel">Model</label><select id="aiModel"><option value="claude-haiku-4-5-20251001"${(S.settings.aiModel || '').includes('haiku') || !S.settings.aiModel ? ' selected' : ''}>Claude Haiku 4.5 · fast, lowest cost</option><option value="claude-sonnet-5-5"${S.settings.aiModel === 'claude-sonnet-5-5' ? ' selected' : ''}>Claude Sonnet 5.5 · smarter</option></select></div></div>
     <div class="sh-foot">${k ? '<button class="btn ghost" data-act="aiForget">Disconnect</button>' : ''}<button class="btn primary" data-act="aiSave">Save</button></div>`;
 }
@@ -4928,6 +4996,7 @@ const A = {
     r.onresult = e => { const t = e.results[0][0].transcript; $('#toast').classList.remove('show'); askSubmit(t); }; r.onerror = e => toast(e.error === 'not-allowed' ? 'Allow the microphone for Hisaab to ask by voice' : 'Could not hear that. Try again.'); try { r.start(); } catch (e) {} },
   aiSettings: () => openSheet(aiSettingsHTML()),
   aiSave: () => { const k = ($('#aiKeyIn').value || '').trim(); try { if (k) localStorage.setItem('hisaab-ai-key', k); else localStorage.removeItem('hisaab-ai-key'); } catch (e) { return toast('Could not save the key on this phone'); } S.settings.aiModel = $('#aiModel').value; save(); closeSheet(); toast(k ? 'Claude connected for open questions' : 'Saved'); },
+  aiQuickToggle: () => { S.settings.aiQuick = S.settings.aiQuick === false; save(); const s2 = sheets[sheets.length - 1]; if (s2) setSheet(s2.wrap, aiSettingsHTML()); },
   aiForget: () => { try { localStorage.removeItem('hisaab-ai-key'); } catch (e) {} closeSheet(); toast('Claude disconnected'); },
   lendSheet: () => { LENDw = openSheet(lendHTML(), { cls: 'tall', onClose: () => { LENDw = null; } }); LENDw._kind = 'lend'; },
   lendNew: b => openLendForm({ kind: b.dataset.v, name: b.dataset.name || '' }),

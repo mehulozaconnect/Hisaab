@@ -10,6 +10,11 @@ Install on your phone in 5 minutes (same way as Sadhana 180):
 
 Installing gives Hisaab its own icon and long-press shortcuts (Add expense, Ask Hisaab, Add income, Lend & borrow, Bills due).
 
+## New in 2.2: smarter one-line entries
+- **Shop and item are kept apart.** "idli 50 from Ramesh stall" fills Paid to **Ramesh Stall** and Notes **Idli**. Repeated words and words like local and nearby are dropped, so "coconut water 90 cash local coconut water" becomes **Coconut Water**, ₹90, Cash, Fruits & Vegetables.
+- **It learns from you.** If you change what was filled in (say, Paid to "Coconut vendor") and save, the same words fill in your version every time after that.
+- **Claude reads your entries (optional).** If you have connected Claude (Ask AI › ⚙), one-line entries are understood by Claude: it works out the shop, the item, the category, the account and the date from plain Hindi, English or Hinglish, using your own accounts and categories. About 20 paise an entry. If Claude can't be reached, Hisaab fills it in by itself. Switch it off in the same ⚙ screen.
+
 ## New in 2.1: a calmer Home
 Home now shows only what you need day to day: the one-line entry box, **this month's spending** (with what is left in your budget per day), one **Needs attention** card, shortcuts, today's entries, quick add and your accounts.
 - **Needs attention** gathers overdue and upcoming bills, budgets you have crossed, spending above your usual, and warranties ending, in one place. It shows the top 3; tap **See all** for the rest with Pay buttons. When nothing needs you, it just says **All clear**.
