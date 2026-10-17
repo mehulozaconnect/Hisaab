@@ -897,7 +897,7 @@ body.listening .qb-mic{background:var(--expense);color:#fff;animation:pulse 1s i
 
 <script>
 'use strict';
-const APP_VERSION = '2.1.1';
+const APP_VERSION = '2.1.2';
 
 /* ---------------- helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
@@ -4033,14 +4033,29 @@ function qeDate(q) { // returns [date, text without the date words]
   return [d, q];
 }
 function qeAccounts(q, type) {
+  const q0 = q;
   const found = []; const accs = activeAccounts(); const GEN = /^(account|bank|card|credit|debit|savings?|current|wallet|the|my|a\/c|ac)$/;
   const take = (a, re) => { if (!found.includes(a)) found.push(a); q = q.replace(re, ' '); };
   for (const a of accs) { const n = a.name.toLowerCase().trim(); if (n.length < 3) continue; const re = new RegExp(`(^|[^\\p{L}\\p{N}])${n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?=$|[^\\p{L}\\p{N}])`, 'u'); if (re.test(q)) take(a, re); } // full name first
-  for (const a of accs) if (!found.includes(a)) for (const w of a.name.toLowerCase().split(/\s+/)) if (w.length >= 3 && !GEN.test(w) && new RegExp(`\\b${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(q)) { take(a, new RegExp(`\\b${w}\\b(?:\\s+(?:bank|card|credit card|account|a\\/c))?`)); break; }
+  { // best match by distinctive words: "hdfc infinia" picks HDFC Infinia over HDFC Savings
+    const escR = w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), wordsOf = a => a.name.toLowerCase().split(/[\s\-\/]+/).filter(w => w.length >= 3 && !GEN.test(w));
+    for (let round = 0; round < 2; round++) {
+      let best = null, bs = 0;
+      for (const a of accs) { if (found.includes(a)) continue; const hit = wordsOf(a).filter(w => new RegExp(`\\b${escR(w)}\\b`).test(q)).length; if (!hit) continue;
+        const sc = hit * 10 + (a.type === 'credit' && /\b(card|cc)\b/.test(q) ? 3 : 0) + (a.type === 'bank' && /\b(bank|account|a\/c|upi)\b/.test(q) ? 2 : 0) - wordsOf(a).length * .1; if (sc > bs) { bs = sc; best = a; } }
+      if (!best) break; if (!found.includes(best)) found.push(best);
+      for (const w of wordsOf(best)) q = q.replace(new RegExp(`\\b${escR(w)}\\b`, 'g'), ' ');
+      if (round === 0 && !/\b(to|into)\b/.test(q)) break;
+    }
+  }
   const first = t => accs.find(a => a.type === t);
   if (/\bcash\b/.test(q)) { const a = first('cash'); if (a) take(a, /\bcash\b/); }
   if (/\b(credit card|cc|card)\b/.test(q) && !found.some(a => a.type === 'credit')) { const a = first('credit'); if (a) take(a, /\b(credit card|cc|card)\b/); }
   if (/\b(upi|gpay|g pay|google pay|phonepe|phone pe|paytm|bhim|debit card|net ?banking|neft|imps|bank)\b/.test(q) && !found.some(a => a.type === 'bank')) { const a = accById(defaultAccountId()); const b = a && a.type === 'bank' ? a : first('bank'); if (b) take(b, /\b(upi|gpay|g pay|google pay|phonepe|phone pe|paytm|bhim|debit card|net ?banking|neft|imps|bank)\b/); }
+  if (found.length > 1) { // keep the order they were said in: "from rbl to hdfc savings"
+    const pos = a => { let best = Infinity; for (const w of [a.name.toLowerCase(), ...a.name.toLowerCase().split(/[\s\-\/]+/).filter(w => w.length >= 3 && !GEN.test(w))]) { const k = q0.search(new RegExp(`\\b${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`)); if (k >= 0 && k < best) best = k; } if (a.type === 'cash' && best === Infinity) { const k = q0.search(/\bcash\b/); if (k >= 0) best = k; } return best; };
+    found.sort((x, y) => pos(x) - pos(y));
+    if (/\b(?:to|into)\s+\S+\s*$/.test(q0.slice(0, pos(found[0]) + 1).trim() + 'x') || new RegExp(`\\b(?:to|into)\\s+$`).test(q0.slice(0, pos(found[0])))) found.reverse(); }
   return [found, q];
 }
 function parseQuick(raw) {
@@ -4063,6 +4078,7 @@ function parseQuick(raw) {
   if (QE_INC.test(q)) out.type = 'income'; else if (QE_TRF.test(q)) out.type = 'transfer';
   const isAtm = /\batm\b|withdr/.test(q), isCardBill = /card bill|cc bill|credit card bill/.test(q);
   const [accs, q3] = qeAccounts(q, out.type); q = q3;
+  if (out.type === 'expense' && accs.length >= 2 && /\b(?:to|into)\b/.test(q)) out.type = 'transfer'; // "1000 from cash to rbl"
   if (out.type === 'transfer') {
     if (isAtm) { out.accountId = (accs.find(a => a.type !== 'cash') || accById(defaultAccountId()) || {}).id || ''; out.toAccountId = (activeAccounts().find(a => a.type === 'cash') || {}).id || ''; }
     else if (isCardBill) { out.toAccountId = (accs.find(a => a.type === 'credit') || activeAccounts().find(a => a.type === 'credit') || {}).id || ''; out.accountId = (accs.find(a => a.type !== 'credit') || accById(defaultAccountId()) || {}).id || ''; }
@@ -4070,7 +4086,8 @@ function parseQuick(raw) {
     q = q.replace(new RegExp(QE_TRF.source, 'g'), ' ').replace(/\b(bill|card|cc)\b/g, ' ');
   } else if (accs[0]) out.accountId = accs[0].id;
   if (lastAcc) { if (out.type === 'transfer' && out.accountId && out.accountId !== lastAcc.id && !out.toAccountId) out.toAccountId = lastAcc.id; else if (!accs.length || !accs.includes(lastAcc)) { if (out.type !== 'transfer' || !accs.length) out.accountId = lastAcc.id; } }
-  q = q.replace(/\b(?:account|acct|a\/c|ac|bank|number|no\.?|ending|xx+)\b/g, ' ');
+  q = q.replace(/\b(?:account|acct|a\/c|ac|bank|number|no\.?|ending|xx+|savings|current)\b/g, ' ');
+  if (out.accountId || accs.length || lastAcc) q = q.replace(/\b(?:credit card|debit card|card|cc|wallet)\b/g, ' ');
   if (out.type === 'income') for (const [re, cn, sn] of KW) { if (!re.test(q)) continue; const c = S.categories.find(x => x.type === 'income' && !x.archived && x.name === cn); if (c) { out.catId = c.id; out.subId = (c.subs.find(x => x.name === sn) || {}).id || ''; if (/bonus/.test(q)) out.subId = (c.subs.find(x => x.name === 'Bonus') || {}).id || out.subId; break; } }
   if (out.type === 'income' && !out.catId && /\bbonus\b/.test(q)) { const c = S.categories.find(x => x.type === 'income' && x.name === 'Salary'); if (c) { out.catId = c.id; out.subId = (c.subs.find(x => x.name === 'Bonus') || {}).id || ''; } }
   q = q.replace(new RegExp(QE_INC.source, 'g'), ' ');
