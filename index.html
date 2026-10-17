@@ -897,7 +897,7 @@ body.listening .qb-mic{background:var(--expense);color:#fff;animation:pulse 1s i
 
 <script>
 'use strict';
-const APP_VERSION = '2.1.0';
+const APP_VERSION = '2.1.1';
 
 /* ---------------- helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
@@ -4010,6 +4010,9 @@ const lumpyBill = b => b.freq === 'custom' ? (b.unit === 'year' || (b.unit === '
 
 /* ---------------- one-line entries: "450 Swiggy yesterday on card" ---------------- */
 const QE_FILL = /\b(spent|spend|paid|pay|paying|for|on|at|to|rs|rs\.|rupees?|rupaye|inr|bought|buy|purchase[d]?|of|the|a|an|my|in|via|using|with|by|me|i|gave|give|kharcha|ka|ki|ke|through|from|worth|bill|amount|got|get)\b/g;
+const QE_SNACK = /\b(idl[iy]s?|dosas?|dosa|uttapam|medu|vada|wada|vada ?pav|wada ?pav|pav ?bhaji|misal|poha|upma|sheera|samosas?|kachoris?|pakod[ae]s?|pakoras?|bhajias?|sandwich(?:es)?|maggi|momos?|frank(?:ie|y)|rolls?|biscuits?|chips|nashta|breakfast|dabeli|pani ?puri|golgappe?|bhel|sev ?puri|chaat|jalebi|lassi|juice|nimbu ?pani|cutting|ice ?creams?|kulfi|parathas?|thepla|khakhra|dhokla|burgers?|pizzas?|puffs?|cakes?|pastr(?:y|ies)|sweets?|mithai|coconut water|nariyal ?pani|sugarcane|ganne ka ras|bun maska|vadapav)\b/;
+const QE_MEAL = /\b(lunch|dinner|thali|biryani|meals?|tiffin|dabba|canteen|mess|khana|dine|dining)\b/;
+const QE_GROC = /\b(atta|rice|chawal|dal|daal|oil|sugar|cheeni|ration|kirana|masala|groceries|grocery|eggs?|ande|bread|paneer|ghee)\b/;
 const QE_INC = /\b(received|recieved|receive|got paid|credited|salary|income|earned|refund|refunded|cashback|bonus|dividend|interest received)\b/;
 const QE_TRF = /\b(transfer|transferred|moved|move|withdrew|withdrawn|withdrawal|atm|deposited|deposit|card bill|credit card bill|cc bill)\b/;
 const QE_DOW = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -4048,8 +4051,14 @@ function parseQuick(raw) {
   // time like "8pm" or "at 8:30 am"
   let m = q.match(/\b(?:at )?(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/); if (m) { let h = +m[1] % 12; if (m[3] === 'pm') h += 12; out.time = `${pad(h)}:${pad(+(m[2] || 0))}`; q = q.replace(m[0], ' '); }
   const [d, q2] = qeDate(q); if (d) out.date = d; q = q2;
-  // the amount: 450, 1.5k, 2 lakh, rs 450, 450/-
-  m = q.match(/(?:\brs\.?\s*)?(\d+(?:\.\d{1,2})?)\s*(k|thousand|lakhs?|lacs?)?\b(?:\/-)?/);
+  // account number / last 4 digits: "rbl account 1785", "card xx4321", "a/c ending 1785"
+  let lastAcc = null; const nNums = () => (q.match(/\d+(?:\.\d+)?/g) || []).length;
+  m = q.match(/\b(?:a\/c|acc(?:oun)?t?|acct|card|ending(?: with| in)?|no\.?|number)\s*(?:no\.?\s*|number\s*|ending\s*)?(?:x+|\*+)?\s*(\d{3,6})\b/);
+  if (m && nNums() > 1) { lastAcc = activeAccounts().find(a => a.last4 && m[1].endsWith(String(a.last4))) || null; q = q.replace(m[1], ' '); }
+  if (!lastAcc && nNums() > 1) for (const a of activeAccounts()) { if (!a.last4) continue; const re = new RegExp(`\\b(?:x+|\\*+)?${a.last4}\\b`); if (re.test(q)) { lastAcc = a; q = q.replace(re, ' '); break; } }
+  // the amount: 450, 1.5k, 2 lakh, rs 450, 450 rs, 450/- (a number next to rs wins)
+  const AMT = '(\\d+(?:\\.\\d{1,2})?)\\s*(k|thousand|lakhs?|lacs?)?';
+  m = q.match(new RegExp(`(?:\\brs\\.?|\\brupees?|\\brupaye|\\binr)\\s*${AMT}\\b`)) || q.match(new RegExp(`\\b${AMT}\\s*(?:rs\\b\\.?|rupees?\\b|rupaye\\b|inr\\b|\\/-)`)) || q.match(/(?:\brs\.?\s*)?(\d+(?:\.\d{1,2})?)\s*(k|thousand|lakhs?|lacs?)?\b(?:\/-)?/);
   if (m) { let v = +m[1]; if (m[2]) v *= /^k|thousand/.test(m[2]) ? 1000 : 100000; out.amountStr = String(round2(v)); q = q.replace(m[0], ' '); }
   if (QE_INC.test(q)) out.type = 'income'; else if (QE_TRF.test(q)) out.type = 'transfer';
   const isAtm = /\batm\b|withdr/.test(q), isCardBill = /card bill|cc bill|credit card bill/.test(q);
@@ -4060,6 +4069,8 @@ function parseQuick(raw) {
     else { out.accountId = accs[0]?.id || ''; out.toAccountId = accs[1]?.id || ''; }
     q = q.replace(new RegExp(QE_TRF.source, 'g'), ' ').replace(/\b(bill|card|cc)\b/g, ' ');
   } else if (accs[0]) out.accountId = accs[0].id;
+  if (lastAcc) { if (out.type === 'transfer' && out.accountId && out.accountId !== lastAcc.id && !out.toAccountId) out.toAccountId = lastAcc.id; else if (!accs.length || !accs.includes(lastAcc)) { if (out.type !== 'transfer' || !accs.length) out.accountId = lastAcc.id; } }
+  q = q.replace(/\b(?:account|acct|a\/c|ac|bank|number|no\.?|ending|xx+)\b/g, ' ');
   if (out.type === 'income') for (const [re, cn, sn] of KW) { if (!re.test(q)) continue; const c = S.categories.find(x => x.type === 'income' && !x.archived && x.name === cn); if (c) { out.catId = c.id; out.subId = (c.subs.find(x => x.name === sn) || {}).id || ''; if (/bonus/.test(q)) out.subId = (c.subs.find(x => x.name === 'Bonus') || {}).id || out.subId; break; } }
   if (out.type === 'income' && !out.catId && /\bbonus\b/.test(q)) { const c = S.categories.find(x => x.type === 'income' && x.name === 'Salary'); if (c) { out.catId = c.id; out.subId = (c.subs.find(x => x.name === 'Bonus') || {}).id || ''; } }
   q = q.replace(new RegExp(QE_INC.source, 'g'), ' ');
@@ -4068,6 +4079,9 @@ function parseQuick(raw) {
   const known = [...new Set(S.txns.filter(t => t.payee && t.type === out.type).map(t => t.payee.trim()))].sort((a, b) => b.length - a.length);
   const kp = known.find(p => { const n = p.toLowerCase(); return n.length >= 3 && (` ${rest} `.includes(` ${n} `) || (rest.length >= 3 && n.startsWith(rest))); });
   if (kp) { out.payee = kp; rest = (` ${rest} `).replace(` ${kp.toLowerCase()} `, ' ').trim(); const lc = learnedCat(kp, out.type); if (lc) { out.catId = lc.catId; out.subId = lc.subId || ''; } }
+  if (!out.catId && out.type === 'expense') { const src0 = ' ' + (out.payee + ' ' + rest).toLowerCase() + ' '; const fc = S.categories.find(c => c.type === 'expense' && !c.archived && c.name === 'Food & Dining');
+    const pick = n => { const sb = fc && fc.subs.find(x => x.name === n); if (sb) { out.catId = fc.id; out.subId = sb.id; } };
+    if (fc) { if (QE_SNACK.test(src0)) pick('Snacks & Tea'); else if (QE_MEAL.test(src0)) pick('Restaurants'); else if (QE_GROC.test(src0)) pick('Groceries'); } }
   if (!out.catId && out.type !== 'transfer') { // everyday words: petrol, fruits, auto, chai…
     const src = ' ' + (out.payee + ' ' + rest).toLowerCase() + ' ';
     for (const [re, kind, name] of ASK_SYN) { if (!re.test(src)) continue; for (const c of S.categories.filter(c => c.type === out.type)) { if (kind === 'sub') { const s = c.subs.find(x => x.name.toLowerCase() === name.toLowerCase()); if (s) { out.catId = c.id; out.subId = s.id; break; } } else if (c.name.toLowerCase() === name.toLowerCase()) { out.catId = c.id; break; } } if (out.catId) { const w = (src.match(re) || [''])[0].trim(); if (!out.payee && /^(netflix|hotstar|spotify|irctc|fastag|prime video|zomato|swiggy)$/.test(w)) out.payee = w.replace(/\b\w/g, c => c.toUpperCase()); rest = src.replace(re, ' ').trim(); break; } }
