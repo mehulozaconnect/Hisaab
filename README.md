@@ -10,6 +10,12 @@ Install on your phone in 5 minutes (same way as Sadhana 180):
 
 Installing gives Hisaab its own icon and long-press shortcuts (Add expense, Ask Hisaab, Add income, Lend & borrow, Bills due).
 
+## New in 2.1: a calmer Home
+Home now shows only what you need day to day: the one-line entry box, **this month's spending** (with what is left in your budget per day), one **Needs attention** card, shortcuts, today's entries, quick add and your accounts.
+- **Needs attention** gathers overdue and upcoming bills, budgets you have crossed, spending above your usual, and warranties ending, in one place. It shows the top 3; tap **See all** for the rest with Pay buttons. When nothing needs you, it just says **All clear**.
+- Credit cards and loans are folded into one **Cards & loans** tile under Accounts. Tap it to see each one.
+- Net worth, Last 7 days, Goals, Running EMIs and Lend & borrow are off Home by default. Switch any of them back on with **Customise Home** at the bottom of Home. Net worth over time is always in Analysis.
+
 ## New in 2.0
 - **One-line entries, typed or spoken.** The box at the top of Home takes a whole entry in one line: type or say "450 Swiggy yesterday on card" and the amount, shop, category, date and account are filled in for you. Check it and tap Save. It understands "kal", "aaj", "parso", "3 days ago", "on 5th", "12 oct", weekdays, "8pm", "1.5k", "2 lakh", "cash", "card", "UPI" and your account names, "received 50000 salary", "atm withdrawal 3000", "paid card bill 20000" and #tags. Put several in one line ("chai 30 and auto 80, lunch 250") and each one opens in turn, or tap **Save all**. Tap the mic to speak (Chrome on Android).
 - **Split a bill.** On a new entry, tap **Split bill** to share one payment between categories, for example ₹2,500 at DMart as ₹1,800 Groceries and ₹700 Household. The rest stays in the first category.
@@ -86,7 +92,7 @@ Every EMI payment shows its count, like **EMI 8/12**, in the transaction list, a
 If a category this month is well above your usual (the average of your last 3 months), Home shows an alert with the reason (for example "Mostly Clothing") and a suggestion to stop or cut that spending for the rest of the month. Hisaab also warns you when you save an expense that takes a category over its usual. EMIs, investments, and quarterly or yearly fees are left out. Analysis → Month shows **This month vs your usual** for every category.
 
 ## Hide balances
-Tap the eye on the Net worth card, or use More → Security → **Hide balances**, to show ₹ •••• instead of your net worth and account balances.
+Tap the eye on the spending card at the top of Home, or use More → Security → **Hide balances**, to show ₹ •••• instead of your net worth and account balances.
 
 ## Quick add and shortcuts
 **Quick add** on Home lists what you log often (tea, cab, groceries). Tap one to open it with the amount and category filled in.

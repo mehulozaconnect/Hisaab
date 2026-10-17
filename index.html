@@ -851,6 +851,34 @@ body.listening .qb-mic{background:var(--expense);color:#fff;animation:pulse 1s i
 .he-row.off .he-tg b{color:var(--muted);font-weight:600}
 @media (max-width:380px){.brand{font-size:23px}.logo-sm{width:36px;height:36px}.brand-row{gap:8px;min-width:0}.top-actions{gap:6px}.ask-pill{padding:0 10px;gap:4px}.top .sub{font-size:12px}.prof-pill{padding-inline:6px}
 #view{padding-inline:14px}.top{margin-inline:-14px;padding-inline:14px}.shortcuts{margin-inline:-14px;padding-inline:14px}.hscroll,#view .chips.scroll{margin-inline:-14px;padding-inline:14px;scroll-padding-inline:14px}.xtiles{grid-template-columns:repeat(3,minmax(0,1fr))}.tiles3{gap:7px}.ctile{padding:11px 10px}}
+
+/* calm Home (2.1) */
+.mhero .row{margin-top:10px}
+.mh-bud{margin-top:14px;display:grid;gap:7px;font-size:13px;font-weight:700}
+.mh-bar{height:8px;border-radius:99px;background:color-mix(in srgb,var(--accent-ink) 20%,transparent);overflow:hidden}
+.mh-bar i{display:block;height:100%;border-radius:inherit;background:var(--accent-ink)}
+.mh-link{margin-top:12px;display:inline-flex;align-items:center;gap:4px;border:0;background:none;padding:0!important;color:inherit;font-weight:800;font-size:13px;opacity:.9}
+.attn{background:var(--surface);border-radius:20px;padding:6px 6px 4px;box-shadow:var(--card-sh)}
+.attn-h{display:flex;justify-content:space-between;align-items:center;padding:8px 12px 4px}
+.attn-h b{font:800 15px/1.2 var(--f-display)}
+.at-row{width:100%;display:flex;align-items:center;gap:12px;padding:11px 12px;border:0;background:none;border-radius:14px;text-align:left;color:var(--ink)}
+.at-row+.at-row{border-top:1px solid var(--line);border-radius:0}
+.at-row .tt{flex:1;min-width:0;display:grid;gap:2px}
+.at-row .tt b{font-weight:800;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.at-row .tt small{color:var(--muted);font-weight:600;font-size:12.5px}
+.at-row svg{color:var(--muted);flex:none}
+.at-dot{width:10px;height:10px;border-radius:50%;flex:none;background:var(--muted)}
+.t-red .at-dot{background:var(--expense);box-shadow:0 0 0 4px color-mix(in srgb,var(--expense) 18%,transparent)}
+.t-red .tt small{color:var(--expense)}
+.t-amber .at-dot{background:#F5A524;box-shadow:0 0 0 4px rgb(245 165 36 / .18)}
+.t-blue .at-dot{background:#4F7CFF}
+.at-n{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:99px;background:color-mix(in srgb,var(--expense) 16%,transparent);color:var(--expense);font:800 11.5px/1.6 var(--f-body);vertical-align:2px}
+.at-amt{font-weight:800;font-size:14px}
+.allclear{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:16px;background:color-mix(in srgb,var(--income) 12%,var(--surface));color:var(--ink);font-size:13.5px;font-weight:600}
+.allclear svg{color:var(--income);flex:none}
+.acc.owed{opacity:.92}
+.acc.owed .b{color:var(--ink)}
+.home-more{display:flex;align-items:center;justify-content:center;gap:4px;width:100%;padding:12px;border:0;background:none;color:var(--accent);font-weight:800;font-size:14px}
 </style>
 </head>
 <body>
@@ -869,7 +897,7 @@ body.listening .qb-mic{background:var(--expense);color:#fff;animation:pulse 1s i
 
 <script>
 'use strict';
-const APP_VERSION = '2.0.0';
+const APP_VERSION = '2.1.0';
 
 /* ---------------- helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
@@ -1213,6 +1241,35 @@ function txRow(t) {
 }
 
 /* ---- Home ---- */
+
+/* ---------------- calm Home: one "Needs attention" card ---------------- */
+function attnItems(td = today()) {
+  const mk = td.slice(0, 7), out = [];
+  for (const it of dueItems(td).filter(isUrgent)) out.push({ tone: it.days < 0 ? 'red' : 'amber', rank: it.days < 0 ? 0 : 1, act: it.kind === 'card' ? 'cardSheet' : 'editBill', id: it.id,
+    t: it.name, s: it.days < 0 ? `Overdue by ${-it.days} day${it.days < -1 ? 's' : ''}` : it.days === 0 ? 'Due today' : it.days === 1 ? 'Due tomorrow' : `Due in ${it.days} days`, amt: it.amount ? compact(it.amount) : '' });
+  for (const c of S.categories.filter(c => c.type === 'expense' && c.budget > 0)) { const sp = catSpent(c.id, mk); if (sp >= c.budget) out.push({ tone: 'red', rank: 2, act: 'tab', v: 'budgets', t: `${c.name} over budget`, s: `by ${rupees(sp - c.budget)}`, amt: '' }); }
+  for (const a of spikeAlerts(td).filter(a => !(S.settings.spikeHidden || {})[a.key])) { if (out.some(o => o.t === `${a.c.name} over budget`)) continue; out.push({ tone: 'amber', rank: 3, act: 'tab', v: 'stats', t: a.level === 'new' ? `New spending on ${a.c.name}` : `${a.c.name} ${a.pct}% above usual`, s: a.drv ? `Mostly ${a.drv}` : 'Compared with your usual month', amt: '' }); }
+  for (const x of warrSoon()) out.push({ tone: 'blue', rank: 4, act: 'warrSheet', t: `${x.item} warranty`, s: x.days === 0 ? 'Ends today' : `Ends in ${x.days} days`, amt: '' });
+  const TR = { red: 0, amber: 1, blue: 2 }; return out.sort((a, b) => TR[a.tone] - TR[b.tone] || a.rank - b.rank);
+}
+const attnRow = o => `<button class="at-row t-${o.tone}" data-act="${o.act}"${o.id ? ` data-id="${o.id}"` : ''}${o.v ? ` data-v="${o.v}"` : ''}><span class="at-dot"></span><span class="tt"><b>${esc(o.t)}</b><small>${esc(o.s)}</small></span>${o.amt ? `<span class="num at-amt">${o.amt}</span>` : ''}${ic('chevR', 15)}</button>`;
+function attnHTML(td) {
+  const L = attnItems(td);
+  if (!L.length) return `<div class="allclear">${ic('check', 17)}<span><b>All clear</b> · no bills due and spending is on track</span></div>`;
+  const red = L.filter(o => o.tone === 'red').length;
+  return `<section class="attn"><div class="attn-h"><b>Needs attention${red ? ` <span class="at-n">${red} urgent</span>` : ''}</b>${L.length > 3 ? `<button class="link" data-act="attnSheet">See all ${L.length}</button>` : ''}</div>${L.slice(0, 3).map(attnRow).join('')}</section>`;
+}
+function attnSheetHTML() {
+  const td = today(), mk = td.slice(0, 7), urgent = dueItems(td).filter(isUrgent), spikes = spikeAlerts(td).filter(a => !(S.settings.spikeHidden || {})[a.key]), ws = warrSoon();
+  const over = S.categories.filter(c => c.type === 'expense' && c.budget > 0).map(c => ({ c, s: catSpent(c.id, mk) })).filter(x => x.s >= x.c.budget * .9);
+  let h = head('Needs attention') + '<div class="sh-body">';
+  if (urgent.length) h += `<section class="sec"><div class="sec-h"><h2>Bills</h2><button class="link" data-act="billsSheet">All bills</button></div><div class="card">${urgent.map(dueRowHTML).join('')}</div></section>`;
+  if (over.length) h += `<section class="sec"><div class="sec-h"><h2>Budgets</h2></div><div class="card pad" style="padding-block:4px">${over.map(x => budRow(x.c, x.s)).join('')}</div></section>`;
+  if (spikes.length) h += `<section class="sec"><div class="sec-h"><h2>Spending above usual</h2></div><div class="card">${spikeCardsHTML(spikes)}</div></section>`;
+  if (ws.length) h += `<section class="sec"><div class="sec-h"><h2>Warranties ending</h2></div><div class="card rows">${ws.map(x => `<button class="rowi" data-act="editTx" data-id="${x.t.id}"><span class="ico warn">${ic('receipt', 18)}</span><span class="tt"><b>${esc(x.item)}</b><small>Bought ${fmtShort(x.t.date)}</small></span><span class="w-left soon">${x.days === 0 ? 'Ends today' : `${x.days} days left`}</span></button>`).join('')}</div></section>`;
+  if (!urgent.length && !over.length && !spikes.length && !ws.length) h += `<div class="card empty"><b>All clear</b><span>Nothing needs you right now.</span></div>`;
+  return h + '</div>';
+}
 function viewHome() {
   const td = today(), mk = td.slice(0, 7), bal = balances();
   let assets = 0, liab = 0; S.accounts.filter(a => !a.archived).forEach(a => { const v = bal[a.id] || 0; if (v >= 0) assets += v; else liab += -v; });
@@ -1228,7 +1285,7 @@ function viewHome() {
   h += backupBanner();
   h += taxNudge();
   const urgent = dueItems(td).filter(isUrgent), overdue = urgent.filter(it => it.days < 0);
-  if (overdue.length) h += `<div class="banner danger">${ic('alert')}<div><p>${overdue.length === 1 ? `${esc(overdue[0].name)} is overdue by ${-overdue[0].days} day${overdue[0].days < -1 ? 's' : ''}.` : `${overdue.length} payments are overdue.`} Pay now to avoid more charges.</p></div></div>`;
+  if (false && overdue.length) h += `<div class="banner danger">${ic('alert')}<div><p>${overdue.length === 1 ? `${esc(overdue[0].name)} is overdue by ${-overdue[0].days} day${overdue[0].days < -1 ? 's' : ''}.` : `${overdue.length} payments are overdue.`} Pay now to avoid more charges.</p></div></div>`;
   const trip = tripTag(td) && S.settings.trip;
   if (trip) h += `<div class="banner trip">${ic('zap')}<div><p><b>Trip mode: ${esc(trip.tag)}</b> · ${money(tagTotal(trip.tag))} so far${trip.until ? ` · until ${fmtShort(trip.until)}` : ''}. New entries are tagged automatically.</p><div class="acts"><button class="btn sm primary" data-act="tagOpen" data-v="${esc(trip.tag)}">See the trip</button><button class="btn sm ghost" data-act="tripStop">Stop trip mode</button></div></div></div>`;
   const spikes = spikeAlerts(td).filter(a => !(S.settings.spikeHidden || {})[a.key]).slice(0, 2), qa = quickAdds(), emis = runningEmis(), ws = warrSoon();
@@ -1236,26 +1293,28 @@ function viewHome() {
   const nws = netWorthSeries(6), nwCh = nws.length >= 2 ? round2(nws[nws.length - 1].v - nws[nws.length - 2].v) : null;
   const parts = {
     quick: () => quickBarHTML(),
+    attention: () => attnHTML(td),
     review: () => reviewCardHTML(),
     networth: () => `<section class="hero"><button class="hero-eye" data-act="toggleBal" aria-label="${hb ? 'Show' : 'Hide'} balances">${ic(hb ? 'eye' : 'eyeOff', 18)}</button><div class="lbl">Net worth</div><div class="big">${hb ? dots : rupees(assets - liab)}</div>
       ${nwCh !== null && !hb ? `<div class="hero-ch">${nwCh >= 0 ? '▲' : '▼'} ${rupees(Math.abs(nwCh))} this month</div>` : ''}
       <div class="row"><span>Assets <b>${hb ? '••••' : rupees(assets)}</b></span><span>Owed <b>${hb ? '••••' : rupees(liab)}</b></span></div>${!hb && nws.length >= 3 ? `<div class="hero-spark">${nwChartSVG(nws, 60).replace('class="nw-svg"', 'class="nw-svg spark"')}</div>` : ''}</section>`,
-    month: () => { let s = `<section class="msum"><div class="rowx"><h3>${MONTHS[d.getMonth()]} so far</h3><button class="link" data-act="tab" data-v="stats">Analysis</button></div>
-      <div class="tiles3"><div class="ctile t-exp"><span>Spent</span><b class="num">${tileAmt(mt.exp)}</b></div><div class="ctile t-inc"><span>Earned</span><b class="num">${tileAmt(mt.inc)}</b></div><div class="ctile t-acc"><span>Per day</span><b class="num">${tileAmt(Math.round(mt.exp / dayN))}</b></div></div>`;
-      if (budTotal > 0) { const p = budSpent / budTotal; const cls = p >= 1 ? 'over' : p >= .8 ? 'warn' : '';
-        s += `<div class="msum-bud"><div class="rowx small"><b>Budget ${rupees(budSpent)} of ${rupees(budTotal)}</b><span class="muted">${p >= 1 ? 'Over by ' + rupees(budSpent - budTotal) : rupees(Math.max(0, Math.floor((budTotal - budSpent) / left))) + '/day left'}</span></div><div class="bar ${cls}"><i style="width:${Math.min(100, p * 100).toFixed(1)}%"></i></div></div>`; }
-      return s + `</section>`; },
+    month: () => { const p = budTotal > 0 ? budSpent / budTotal : 0;
+      return `<section class="hero mhero"><button class="hero-eye" data-act="toggleBal" aria-label="${hb ? 'Show' : 'Hide'} amounts">${ic(hb ? 'eye' : 'eyeOff', 18)}</button><div class="lbl">${MONTHS[d.getMonth()]} · spent so far</div><div class="big">${hb ? dots : rupees(mt.exp)}</div>
+      <div class="row"><span>Earned <b>${hb ? '••••' : rupees(mt.inc)}</b></span><span>Per day <b>${hb ? '••••' : rupees(Math.round(mt.exp / dayN))}</b></span></div>
+      ${budTotal > 0 ? `<div class="mh-bud"><div class="mh-bar"><i style="width:${Math.min(100, p * 100).toFixed(1)}%"></i></div><span>${p >= 1 ? `Budget crossed by ${rupees(budSpent - budTotal)}` : `${rupees(Math.max(0, Math.floor((budTotal - budSpent) / left)))} a day left in budget`}</span></div>` : ''}
+      <button class="mh-link" data-act="tab" data-v="stats">See where it went ${ic('chevR', 14)}</button></section>`; },
     actions: () => `<div class="shortcuts">${[['calOpen', 'calendar', 'Calendar', 's1'], ['reviewOpen', 'stats', 'Month review', 's2'], ['tagsSheet', 'tag', 'Trips', 's3'], ['cashCheck', 'wallet', 'Cash check', 's4'], ['subsSheet', 'repeat', 'Subscriptions', 's5'], ['goalsSheet', 'target', 'Goals', 's6'], ['loanSheet', 'calc', 'Loan planner', 's7'], ['warrSheet', 'receipt', 'Warranties', 's8']].map(([a, i, l, c]) => `<button class="sc ${c}" data-act="${a}"><span class="sc-i">${ic(i, 21)}</span><span class="sc-l">${l}</span></button>`).join('')}</div>`,
     due: () => urgent.length ? `<section class="sec"><div class="sec-h"><h2>Due soon</h2><button class="link" data-act="billsSheet">All bills</button></div><div class="card">${urgent.map(dueRowHTML).join('')}</div></section>` : '',
     spikes: () => spikes.length ? `<section class="sec"><div class="sec-h"><h2>Spending alerts</h2><button class="link" data-act="tab" data-v="stats">Analysis</button></div><div class="card">${spikeCardsHTML(spikes)}</div></section>` : '',
     warranty: () => ws.length ? `<section class="sec"><div class="sec-h"><h2>Warranties ending soon</h2><button class="link" data-act="warrSheet">All</button></div><div class="card rows">${ws.map(x => `<button class="rowi" data-act="editTx" data-id="${x.t.id}"><span class="ico warn">${ic('receipt', 18)}</span><span class="tt"><b>${esc(x.item)}</b><small>Bought ${fmtShort(x.t.date)} from ${esc(x.t.payee || '—')}</small></span><span class="w-left soon">${x.days === 0 ? 'Ends today' : `${x.days} days left`}</span></button>`).join('')}</div></section>` : '',
     quickadd: () => qa.length ? `<section class="sec"><div class="sec-h"><h2>Quick add</h2><span class="small muted" style="font-weight:700">tap to log again</span></div><div class="hscroll">${qa.map(t => `<button class="qadd" data-act="quickAdd" data-id="${t.id}">${catIcon(catById(t.catId))}<span><b>${esc(txTitle(t))}</b><small class="num">${rupees(t.amount)}</small></span></button>`).join('')}</div></section>` : '',
-    accounts: () => `<section class="sec"><div class="sec-h"><h2>Accounts</h2><button class="link" data-act="accountsSheet">Manage</button></div><div class="hscroll">` + activeAccounts().map(a => { const v = bal[a.id] || 0; const T = ACC_TYPES[a.type] || ACC_TYPES.bank; let sub = T.label;
+    accounts: () => { const liabs = activeAccounts().filter(a => isLiab(a) || a.type === 'credit' || a.type === 'loan'), owed = liabs.reduce((s, a) => s + Math.max(0, -(bal[a.id] || 0)), 0);
+      return `<section class="sec"><div class="sec-h"><h2>Accounts</h2><button class="link" data-act="accountsSheet">Manage</button></div><div class="hscroll">` + activeAccounts().filter(a => !liabs.includes(a)).map(a => { const v = bal[a.id] || 0; const T = ACC_TYPES[a.type] || ACC_TYPES.bank; let sub = T.label;
         if (a.type === 'credit') sub = v < 0 ? `Owed` + (a.limit ? ` · ${compact(a.limit + v)} free` : '') : (a.limit ? `Limit ${compact(a.limit)}` : 'Nothing due');
         if (hasCycle(a)) { const c = cardStatus(a, td); sub = c.state === 'none' || c.state === 'paid' ? `Bill paid · ${compact(c.unbilled)} unbilled` : c.state === 'due' ? `Bill ${compact(c.remaining)} due ${fmtShort(c.due)}` : `Overdue ${compact(c.remaining)}`; }
         if (a.type === 'loan') sub = v < 0 ? `Outstanding` : 'Closed';
         const shown = hb ? '₹ ••••' : isLiab(a) ? rupees(Math.abs(v)) : rupees(v);
-        return `<button class="acc at-${a.type}" data-act="accTx" data-id="${a.id}"><span class="t"><span class="emo">${T.icon}</span><span>${esc(a.name)}</span></span><span class="b">${shown}</span><span class="s">${esc(sub)}${a.last4 ? ' · ••' + esc(a.last4) : ''}</span></button>`; }).join('') + `<button class="acc add" data-act="editAccount">${ic('plus')}<span>Add account</span></button></div></section>`,
+        return `<button class="acc at-${a.type}" data-act="accTx" data-id="${a.id}"><span class="t"><span class="emo">${T.icon}</span><span>${esc(a.name)}</span></span><span class="b">${shown}</span><span class="s">${esc(sub)}${a.last4 ? ' · ••' + esc(a.last4) : ''}</span></button>`; }).join('') + (liabs.length ? `<button class="acc at-loan owed" data-act="accountsSheet"><span class="t"><span class="emo">💳</span><span>Cards & loans</span></span><span class="b">${hb ? '₹ ••••' : rupees(owed)}</span><span class="s">${liabs.length} account${liabs.length > 1 ? 's' : ''} · owed in all</span></button>` : '') + `<button class="acc add" data-act="editAccount">${ic('plus')}<span>Add account</span></button></div></section>`; },
     budgetalerts: () => alerts.length ? `<section class="sec"><div class="sec-h"><h2>Budget alerts</h2><button class="link" data-act="tab" data-v="budgets">Budgets</button></div><div class="card pad" style="padding-block:4px">${alerts.slice(0, 3).map(x => budRow(x.c, x.s)).join('')}</div></section>` : '',
     emis: () => emis.length ? `<section class="sec"><div class="sec-h"><h2>Running EMIs</h2><button class="link" data-act="emisSheet">All EMIs</button></div><div class="card" style="padding:2px 16px">${emiRowsHTML(emis.slice(0, 4))}</div></section>` : '',
     lend: () => homeLendHTML(),
@@ -1263,7 +1322,8 @@ function viewHome() {
     subs: () => { const L = subscriptions(); if (!L.length) return ''; const m = L.reduce((s, x) => s + x.monthly, 0);
       return `<section class="sec"><div class="sec-h"><h2>Subscriptions</h2><button class="link" data-act="subsSheet">All</button></div><button class="card pad subs-card" data-act="subsSheet"><span><b class="num">${rupees(m)}</b> a month on ${L.length} subscription${L.length > 1 ? 's' : ''} · ${rupees(m * 12)} a year</span><span class="small muted">${L.slice(0, 3).map(x => esc(x.name)).join(', ')}${L.length > 3 ? '…' : ''}</span></button></section>`; },
     nwtrend: () => nwSectionHTML(),
-    days: () => homeDaysHTML(td)
+    days: () => homeDaysHTML(td, 'today'),
+    week: () => homeDaysHTML(td, 'week')
   };
   const L = homeLayout();
   for (const id of L.order) if (!L.hidden[id] && parts[id]) h += parts[id]();
@@ -3590,14 +3650,15 @@ function payeeSugg(el) {
 document.addEventListener('pointerdown', e => { if (e.target.closest('.sugg')) e.preventDefault(); });
 document.addEventListener('focusout', e => { if (e.target.id === 'tfPayee') setTimeout(() => { const b = $('#tfPayeeSugg'); if (b && document.activeElement?.id !== 'tfPayee') b.hidden = true; }, 200); });
 function dayTotals(list) { let e = 0, i = 0; for (const t of list) { if (t.type === 'expense') e += t.amount; else if (t.type === 'income') i += t.amount; } return [e ? 'Spent ' + money(e) : '', i ? 'Got ' + money(i) : ''].filter(Boolean).join(' · '); }
-function homeDaysHTML(td) {
+function homeDaysHTML(td, part = 'both') {
   const from = addDays(td, -7), days = new Map();
   for (const t of S.txns) if (t.date <= td && t.date >= from) { if (!days.has(t.date)) days.set(t.date, []); days.get(t.date).push(t); }
   const tl = (days.get(td) || []).sort(sortTx); let h = '';
-  h += `<section class="sec"><div class="sec-h"><h2>Today</h2><span class="small num" style="font-weight:800">${tl.length ? dayTotals(tl) : ''}</span></div>` +
+  if (part !== 'week') h += `<section class="sec"><div class="sec-h"><h2>Today</h2><span class="small num" style="font-weight:800">${tl.length ? dayTotals(tl) : ''}</span></div>` +
     (tl.length ? `<div class="card txlist">${tl.map(txRow).join('')}</div>` : `<div class="card empty slim"><b>Nothing added today</b><button class="btn primary sm" data-act="newTx">${ic('plus', 16)} Add expense</button></div>`) +
     (tl.length && !S.settings.selTipSeen ? `<p class="small muted" style="margin:0;font-weight:600">Tip: press and hold an entry to select several and see their total.</p>` : '') + '</section>';
   const prev = [...days.keys()].filter(d => d < td).sort().reverse();
+  if (part === 'today') return h + (S.txns.some(t => t.date < td) ? `<button class="home-more" data-act="tab" data-v="txns">See all transactions ${ic('chevR', 15)}</button>` : '');
   if (prev.length) h += `<section class="sec"><div class="sec-h"><h2>Last 7 days</h2><button class="link" data-act="tab" data-v="txns">See all</button></div>` +
     prev.map(d => { const l = days.get(d).sort(sortTx); return `<div class="dayhead" data-day="${d}"><span>${fmtDay(d)}</span><span class="num">${dayTotals(l)}</span></div><div class="card txlist">${l.map(txRow).join('')}</div>`; }).join('') + '</section>';
   else if (!S.txns.some(t => t.date <= td)) h += `<div class="card empty"><b>No transactions yet</b><span>Tap + to add your first expense, or tap Ask AI to see what Hisaab can answer.</span></div>`;
@@ -4335,14 +4396,15 @@ function openLoan(srcId) { const src = loanSources(); const s = src.find(x => x.
 const refreshLoan = () => { const s = sheets.find(x => x.wrap._kind === 'loan'); if (!s) return; const out = $('#lpOut', s.wrap); if (!out) return setSheet(s.wrap, loanHTML()); const tmp = document.createElement('div'); tmp.innerHTML = loanHTML(); out.innerHTML = $('#lpOut', tmp).innerHTML; };
 
 /* ---------------- customise Home ---------------- */
-const HOME_SECTIONS = [['quick', 'One-line entry', true], ['review', 'Last month in review', true], ['networth', 'Net worth', true], ['month', 'This month', true], ['actions', 'Shortcuts', true], ['due', 'Due soon', true], ['spikes', 'Spending alerts', true],
-  ['warranty', 'Warranties ending soon', true], ['quickadd', 'Quick add', true], ['accounts', 'Accounts', true], ['budgetalerts', 'Budget alerts', true], ['emis', 'Running EMIs', true], ['lend', 'Lend & borrow', true], ['goals', 'Goals', true],
-  ['subs', 'Subscriptions', false], ['nwtrend', 'Net worth over time', false], ['days', 'Today and last 7 days', true]];
-function homeLayout() { const h = S.settings.home || {}, ids = HOME_SECTIONS.map(x => x[0]); let order = (h.order || []).filter(id => ids.includes(id)); ids.forEach(id => { if (!order.includes(id)) { const i = ids.indexOf(id); order.splice(Math.min(i, order.length), 0, id); } });
-  const hidden = h.hidden || Object.fromEntries(HOME_SECTIONS.filter(x => !x[2]).map(x => [x[0], true])); return { order, hidden }; }
+const HOME_SECTIONS = [['quick', 'One-line entry', true], ['month', 'This month', true], ['attention', 'Needs attention (bills, alerts)', true], ['review', 'Last month in review', true], ['actions', 'Shortcuts', true],
+  ['days', 'Today', true], ['quickadd', 'Quick add', true], ['accounts', 'Accounts', true], ['networth', 'Net worth', false], ['week', 'Last 7 days', false], ['goals', 'Goals', false], ['emis', 'Running EMIs', false], ['lend', 'Lend & borrow', false],
+  ['due', 'Due soon (full list)', false], ['spikes', 'Spending alerts (full)', false], ['budgetalerts', 'Budget alerts (full)', false], ['warranty', 'Warranties ending soon', false], ['subs', 'Subscriptions', false], ['nwtrend', 'Net worth over time', false]];
+const HOME_V = 3;
+function homeLayout() { const h0 = S.settings.home || {}, h = h0.v === HOME_V ? h0 : {}, ids = HOME_SECTIONS.map(x => x[0]); let order = (h.order || []).filter(id => ids.includes(id)); ids.forEach(id => { if (!order.includes(id)) { const i = ids.indexOf(id); order.splice(Math.min(i, order.length), 0, id); } });
+  const hidden = h.hidden || Object.fromEntries(HOME_SECTIONS.filter(x => !x[2]).map(x => [x[0], true])); return { v: HOME_V, order, hidden }; }
 function homeEditHTML() {
   const L = homeLayout(), name = id => HOME_SECTIONS.find(x => x[0] === id)[1];
-  return head('Customise Home') + `<div class="sh-body"><p class="small muted" style="margin:0;font-weight:600">Switch off what you don't need and move the rest up or down. Alerts like overdue bills always show at the top.</p>
+  return head('Customise Home') + `<div class="sh-body"><p class="small muted" style="margin:0;font-weight:600">Switch off what you don't need and move the rest up or down. Overdue bills, budget and spending alerts are all inside Needs attention.</p>
     <div class="card">${L.order.map((id, i) => `<div class="he-row${L.hidden[id] ? ' off' : ''}"><button class="he-tg" data-act="homeToggle" data-v="${id}" aria-pressed="${!L.hidden[id]}"><span class="switch${L.hidden[id] ? '' : ' on'}"></span><b>${esc(name(id))}</b></button><button class="icon-btn" data-act="homeMove" data-v="${id}" data-d="-1" aria-label="Move ${esc(name(id))} up"${i === 0 ? ' disabled' : ''}>${ic('chevU', 18)}</button><button class="icon-btn" data-act="homeMove" data-v="${id}" data-d="1" aria-label="Move ${esc(name(id))} down"${i === L.order.length - 1 ? ' disabled' : ''}>${ic('chevD', 18)}</button></div>`).join('')}</div>
     <button class="btn ghost block" data-act="homeReset">Reset to the standard layout</button></div>`;
 }
@@ -4964,6 +5026,7 @@ const A = {
   loanSheet: () => openLoan(),
   lpSrc: b => { const x = loanSources().find(y => y.id === b.dataset.v); if (!x) return; Object.assign(LP, { src: x.id, PStr: String(Math.round(x.P)), emiStr: x.emi ? String(x.emi) : LP.emiStr, rate: String((S.settings.loanRates || {})[x.id] ?? x.rate ?? LP.rate) }); const s2 = sheets.find(y => y.wrap._kind === 'loan'); if (s2) setSheet(s2.wrap, loanHTML()); },
   lpMode: b => { LP.mode = b.dataset.v; const s2 = sheets.find(y => y.wrap._kind === 'loan'); if (s2) setSheet(s2.wrap, loanHTML()); },
+  attnSheet: () => { const w = openSheet(attnSheetHTML(), { cls: 'tall' }); w._kind = 'attn'; },
   homeEdit: () => { const w = openSheet(homeEditHTML(), { cls: 'tall' }); w._kind = 'homeedit'; },
   homeToggle: b => { const L = homeLayout(); L.hidden[b.dataset.v] = !L.hidden[b.dataset.v]; S.settings.home = L; save(); refreshHomeEdit(); render(); },
   homeMove: b => { const L = homeLayout(), i = L.order.indexOf(b.dataset.v), j = i + +b.dataset.d; if (j < 0 || j >= L.order.length) return; [L.order[i], L.order[j]] = [L.order[j], L.order[i]]; S.settings.home = L; save(); refreshHomeEdit(); render(); },
