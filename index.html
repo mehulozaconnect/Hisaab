@@ -902,12 +902,25 @@ html[data-theme="leaf"] body{background:var(--bg)}
 .bt-v span{font-size:.5em;vertical-align:.62em;margin-right:3px;letter-spacing:0}
 .bt-s{font-size:15px;color:var(--muted);font-weight:600;margin-top:6px}
 .bt-s b{color:var(--ink);font-weight:800}
-.bt-bars{display:flex;align-items:flex-end;gap:3px;height:64px;margin-top:16px;border:0;background:none;padding:0;width:100%}
-.bt-bars i{flex:1;border-radius:3px;background:color-mix(in srgb,var(--ink) 16%,var(--bg));min-height:3px}
-.bt-bars i.t{background:var(--ink)}
-.bt-bars i.f{background:color-mix(in srgb,var(--ink) 6%,var(--bg))}
-.bt-ax{position:relative;display:flex;justify-content:space-between;font-size:12px;color:var(--muted);font-weight:700}
-.pp-c{font-size:12px;opacity:.7}
+.bt-bars{display:flex;align-items:flex-end;gap:2px;height:76px;margin-top:16px;width:100%}
+.bt-bars button{flex:1;height:100%;display:flex;align-items:flex-end;border:0;background:none;padding:0 1px;border-radius:5px}
+.bt-bars i{display:block;width:100%;border-radius:3px;background:color-mix(in srgb,var(--ink) 18%,var(--bg))}
+.bt-bars .t i{background:color-mix(in srgb,var(--ink) 45%,var(--bg))}
+.bt-bars .f i{background:color-mix(in srgb,var(--ink) 6%,var(--bg))}
+.bt-bars .on i{background:var(--ink)}
+.bt-bars .on{background:color-mix(in srgb,var(--ink) 7%,transparent)}
+.bt-ax{position:relative;height:18px;margin-top:4px;font-size:12px;color:var(--muted);font-weight:700}
+.bt-ax span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.bt-ax span:first-child{transform:none;left:0!important}
+.bt-day{margin-top:10px;background:var(--surface);border-radius:16px;padding:12px 14px;display:grid;gap:8px;box-shadow:var(--card-sh)}
+.bd-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.bd-h b{font-weight:800;font-size:15px}
+.bd-h span{color:var(--muted);font-weight:600;font-size:13.5px;flex:1}
+.bd-h .link{font-size:13.5px;display:inline-flex;align-items:center;gap:2px}
+.bd-top{display:flex;flex-wrap:wrap;gap:6px}
+.bd-top span{font-size:13px;font-weight:600;padding:4px 10px;border-radius:99px;background:var(--surface-2);color:var(--ink)}
+.bd-top b{font-weight:800}
+.bd-top .more{color:var(--muted)}
 .bt-td{position:absolute;transform:translateX(-50%);color:var(--ink)}
 .avgbox{display:flex;align-items:center;gap:12px;width:100%;border:0;text-align:left;background:var(--surface);border-radius:20px;padding:14px 14px 14px 18px;box-shadow:var(--card-sh);color:var(--ink)}
 .ab-l{display:grid;flex:none}
@@ -992,7 +1005,7 @@ body:has(#qdock) #fab{display:none}
 
 <script>
 'use strict';
-const APP_VERSION = '3.0.0';
+const APP_VERSION = '3.0.1';
 
 /* ---------------- helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
@@ -1385,14 +1398,19 @@ function avgNow(td = today()) {
 }
 function homeBigHTML(td, hb) {
   const mk = td.slice(0, 7), t0 = rangeTotals(td, td), mt = rangeTotals(mk + '-01', td), dayN = +td.slice(8), dim = parseYmd(monthEnd(mk)).getDate();
-  const ev = everyday(mk + '-01', td).by, vals = []; for (let i = 1; i <= dim; i++) { const d = `${mk}-${pad(i)}`; vals.push([d, d <= td ? (ev[d] || 0) : null]); }
-  const max = Math.max(1, ...vals.map(v => v[1] || 0));
-  const big = hb ? '••••' : Math.round(t0.exp).toLocaleString('en-IN'), tPos = ((dayN - .5) / dim * 100).toFixed(1);
+  const byDay = {}, cnt = {}; for (const t of S.txns) if (t.type === 'expense' && t.date.startsWith(mk) && t.date <= td) { byDay[t.date] = (byDay[t.date] || 0) + t.amount; cnt[t.date] = (cnt[t.date] || 0) + 1; }
+  const max = Math.max(1, ...Object.values(byDay)), sel = ui.barSel && ui.barSel.startsWith(mk) && ui.barSel <= td ? ui.barSel : td;
+  const big = hb ? '••••' : Math.round(t0.exp).toLocaleString('en-IN');
+  let bars = ''; for (let i = 1; i <= dim; i++) { const d = `${mk}-${pad(i)}`, fut = d > td, v = byDay[d] || 0;
+    bars += `<button class="${d === sel ? 'on ' : ''}${d === td ? 't ' : ''}${fut ? 'f' : ''}" ${fut ? 'disabled' : `data-act="barPick" data-v="${d}"`} aria-label="${fmtShort(d)}: ${rupees(v)}"><i style="height:${fut ? 5 : Math.max(5, Math.round(Math.sqrt(v / max) * 100))}%"></i></button>`; }
+  const marks = [1, 8, 15, 22, 29].filter(x => x <= dim).map(x => `<span style="left:${((x - .5) / dim * 100).toFixed(2)}%"${x === dayN ? ' class="now"' : ''}>${x === 1 ? `1 ${MON[+mk.slice(5) - 1]}` : x}</span>`).join('');
+  const sl = S.txns.filter(t => t.date === sel && t.type === 'expense').sort((a, b) => b.amount - a.amount), sv = sl.reduce((s, t) => s + t.amount, 0);
+  const label = sel === td ? 'Today' : sel === addDays(td, -1) ? 'Yesterday' : `${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][parseYmd(sel).getDay()]}, ${fmtShort(sel)}`;
+  const detail = `<div class="bt-day"><div class="bd-h"><b>${label}</b><span>${sl.length ? `${hb ? '••••' : rupees(sv)} spent · ${sl.length} ${sl.length === 1 ? 'entry' : 'entries'}` : 'Nothing spent'}</span><button class="link" data-act="calOpen" data-v="${sel}">Open day ${ic('chevR', 13)}</button></div>${sl.length ? `<div class="bd-top">${sl.slice(0, 3).map(t => `<span>${esc(txTitle(t))} <b>${hb ? '••' : rupees(t.amount)}</b></span>`).join('')}${sl.length > 3 ? `<span class="more">+${sl.length - 3} more</span>` : ''}</div>` : ''}</div>`;
   return `<section class="bigtoday"><button class="bt-k" data-act="toggleBal" aria-label="${hb ? 'Show' : 'Hide'} amounts">Spent today ${ic(hb ? 'eye' : 'eyeOff', 15)}</button>
     <div class="bt-v${big.length > 6 ? ' long' : ''}"><span>₹</span>${big}</div>
     <div class="bt-s">${MONTHS[+mk.slice(5) - 1]} so far <b>${hb ? '••••' : rupees(mt.exp)}</b>${mt.inc ? ` · earned ${hb ? '••••' : compact(mt.inc)}` : ''}</div>
-    <button class="bt-bars" data-act="calOpen" aria-label="Open the month calendar">${vals.map(([d, v]) => `<i class="${d === td ? 't' : v === null ? 'f' : ''}" style="height:${v === null ? 6 : Math.max(6, Math.round(v / max * 100))}%"></i>`).join('')}</button>
-    <div class="bt-ax"><span>1 ${MON[+mk.slice(5) - 1]}</span>${dayN > 4 && dayN < dim - 3 ? `<span class="bt-td" style="left:${tPos}%">today</span>` : ''}<span>${dim}</span></div></section>`;
+    <div class="bt-bars" role="group" aria-label="Spending each day of ${MONTHS[+mk.slice(5) - 1]}. Tap a day.">${bars}</div><div class="bt-ax">${marks}</div>${detail}</section>`;
 }
 function homeAvgHTML(td, hb) {
   const a = avgNow(td); if (!a.week && !a.last) return '';
@@ -5502,6 +5520,7 @@ const A = {
   loanSheet: () => openLoan(),
   lpSrc: b => { const x = loanSources().find(y => y.id === b.dataset.v); if (!x) return; Object.assign(LP, { src: x.id, PStr: String(Math.round(x.P)), emiStr: x.emi ? String(x.emi) : LP.emiStr, rate: String((S.settings.loanRates || {})[x.id] ?? x.rate ?? LP.rate) }); const s2 = sheets.find(y => y.wrap._kind === 'loan'); if (s2) setSheet(s2.wrap, loanHTML()); },
   lpMode: b => { LP.mode = b.dataset.v; const s2 = sheets.find(y => y.wrap._kind === 'loan'); if (s2) setSheet(s2.wrap, loanHTML()); },
+  barPick: b => { ui.barSel = b.dataset.v; render(); },
   avgSheet: () => { const w = openSheet(avgSheetHTML(), { cls: 'tall' }); w._kind = 'avg'; },
   attnSheet: () => { const w = openSheet(attnSheetHTML(), { cls: 'tall' }); w._kind = 'attn'; },
   homeEdit: () => { const w = openSheet(homeEditHTML(), { cls: 'tall' }); w._kind = 'homeedit'; },
