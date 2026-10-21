@@ -10,6 +10,13 @@ Install on your phone in 5 minutes (same way as Sadhana 180):
 
 Installing gives Hisaab its own icon and long-press shortcuts (Add expense, Ask Hisaab, Add income, Lend & borrow, Bills due).
 
+## New in 3.0: Big & simple
+- **New look (Leaf theme).** Home now opens on one big number, what you spent today, with this month's total and a small bar for every day of the month (tap the bars for the calendar). Change the theme any time in More › Theme.
+- **Daily average box.** Shows your day-to-day spending per day this week compared with last month, for example "₹841 a day, ▼31% vs ₹1,217 in Sep". Tap it for **Your averages**: per day and per month for this week, last 7 days, this month, last month, last 3 and 6 months and this year; month by month; by quarter; by category against your usual; and which day of the week you spend the most. EMIs, investments and once-a-year payments are left out so they don't distort the averages.
+- **Bills only when they need you.** A dark strip with a Pay button appears only while a bill is due or overdue (or a budget is crossed), and disappears once it's done. There is no "All clear" banner any more.
+- **Type or say box at the bottom**, next to the + button, so it is always within thumb reach.
+- Shortcuts, Quick add, Accounts and the rest are off Home by default; turn any of them back on with Customise Home.
+
 ## New in 2.3: a knowledge base behind one-line entries
 One-line entries are now read against a built-in knowledge base of about 1,900 Indian everyday words and names:
 - **About 1,430 things people buy and pay for**, in English, Hindi, Marathi and Hinglish (samosa, cutting chai, kanda, istri, light bill, school fees, agarbatti, traffic challan…), each linked to its category and sub-category.

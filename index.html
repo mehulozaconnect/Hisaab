@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Manrope:wght@400;500;600;700;800&display=swap">
 <script>
-  (function(){ try{ var t=localStorage.getItem('hisaab-theme')||'system';
+  (function(){ try{ var t=localStorage.getItem('hisaab-theme')||'leaf';
     if(t==='system') t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
     document.documentElement.setAttribute('data-theme',t);}catch(e){} })();
 </script>
@@ -882,6 +882,98 @@ body.listening .qb-mic{background:var(--expense);color:#fff;animation:pulse 1s i
 .qbar.busy .qb-ic{animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .home-more{display:flex;align-items:center;justify-content:center;gap:4px;width:100%;padding:12px;border:0;background:none;color:var(--accent);font-weight:800;font-size:14px}
+/* ---- Big & simple (3.0) ---- */
+html[data-theme="leaf"]{
+  --bg:#EEF3EF; --surface:#FFFFFF; --surface-2:#F4F8F5; --line:#D5DFD8;
+  --ink:#13211A; --muted:#5F7068; --accent:#1F8A55; --accent-ink:#FFFFFF; --accent-soft:#DCEFE3;
+  --income:#1F8A55; --expense:#C8432E; --transfer:#5F7068; --warn:#9A6410; --hi:#C8F26B; --hi-ink:#13211A;
+  --c-in:#1baf7a; --c-out:#eb6834; --card-sh:0 1px 2px rgb(19 33 26 / .05); color-scheme:light;
+}
+:root{--hi:var(--accent);--hi-ink:var(--accent-ink)}
+html[data-theme="leaf"] body{background:var(--bg)}
+.top.simple{align-items:center;padding-block:14px 4px}
+.top.simple .brand{font-size:22px}
+.top.simple .logo-sm{width:32px;height:32px}
+.bigtoday{display:grid;gap:4px;padding:6px 2px 0}
+.bt-k{justify-self:start;display:inline-flex;align-items:center;gap:6px;border:0;background:none;padding:0;color:var(--muted);font-weight:700;font-size:15px}
+.bt-k svg{opacity:.7}
+.bt-v{font:800 88px/.95 var(--f-display);letter-spacing:-.045em;font-variant-numeric:tabular-nums;color:var(--ink);margin-top:2px}
+.bt-v.long{font-size:64px}
+.bt-v span{font-size:.5em;vertical-align:.62em;margin-right:3px;letter-spacing:0}
+.bt-s{font-size:15px;color:var(--muted);font-weight:600;margin-top:6px}
+.bt-s b{color:var(--ink);font-weight:800}
+.bt-bars{display:flex;align-items:flex-end;gap:3px;height:64px;margin-top:16px;border:0;background:none;padding:0;width:100%}
+.bt-bars i{flex:1;border-radius:3px;background:color-mix(in srgb,var(--ink) 16%,var(--bg));min-height:3px}
+.bt-bars i.t{background:var(--ink)}
+.bt-bars i.f{background:color-mix(in srgb,var(--ink) 6%,var(--bg))}
+.bt-ax{position:relative;display:flex;justify-content:space-between;font-size:12px;color:var(--muted);font-weight:700}
+.pp-c{font-size:12px;opacity:.7}
+.bt-td{position:absolute;transform:translateX(-50%);color:var(--ink)}
+.avgbox{display:flex;align-items:center;gap:12px;width:100%;border:0;text-align:left;background:var(--surface);border-radius:20px;padding:14px 14px 14px 18px;box-shadow:var(--card-sh);color:var(--ink)}
+.ab-l{display:grid;flex:none}
+.ab-l small,.ab-r small{font-size:12.5px;color:var(--muted);font-weight:600}
+.ab-l b{font:800 26px/1.15 var(--f-display);letter-spacing:-.02em}
+.ab-r{flex:1;display:grid;justify-items:end;text-align:right;gap:2px}
+.ab-p{font-weight:800;font-size:14px;padding:2px 10px;border-radius:99px}
+.avgbox.up .ab-p{background:color-mix(in srgb,var(--expense) 14%,transparent);color:var(--expense)}
+.avgbox.down .ab-p{background:color-mix(in srgb,var(--income) 15%,transparent);color:var(--income)}
+.avgbox>svg{color:var(--muted);flex:none}
+.strip{display:flex;align-items:center;gap:12px;background:var(--ink);color:var(--bg);border-radius:18px;padding:12px 12px 12px 16px}
+.strip .st-t{flex:1;min-width:0;display:grid;gap:2px;border:0;background:none;padding:0;text-align:left;color:inherit}
+.strip .st-t b{font-weight:700;font-size:15.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.strip .st-t small{font-size:13px;opacity:.72;font-weight:600}
+.strip.t-red .st-t small{opacity:1;color:color-mix(in srgb,var(--expense) 55%,var(--bg))}
+.st-b{flex:none;border:0;border-radius:99px;padding:9px 18px;font-weight:800;font-size:14px;background:var(--hi);color:var(--hi-ink)}
+.plain{display:grid;gap:4px}
+.pl-h{display:flex;justify-content:space-between;align-items:baseline;padding:0 2px}
+.pl-h h2{margin:0;font:700 15px var(--f-body);color:var(--muted)}
+.pl-h span{font-size:13px;color:var(--muted);font-weight:700}
+.pl-list.txlist{background:none!important;border:0!important;box-shadow:none!important;padding:0!important}
+.pl-list .tx{padding-inline:2px!important;border-top:1px solid var(--line)}
+.pl-list .tx .ci{background:var(--surface)!important;border-radius:12px}
+.pl-empty{margin:0;padding:14px 2px;border-top:1px solid var(--line);color:var(--muted);font-weight:600}
+.qdock{position:fixed;left:50%;transform:translateX(-50%);width:min(560px,100%);bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 10px);z-index:19;padding:0 12px;display:flex;align-items:center;gap:8px;transition:transform .15s}
+.qdock{left:0;right:0;margin:0 auto;transform:none}
+.qdock::before{content:"";position:absolute;inset:-10px 0 -12px;background:linear-gradient(to bottom,transparent,var(--bg) 40%);z-index:-1;pointer-events:none}
+.qdock textarea,.qdock input{flex:1;min-width:0;height:56px!important;min-height:0!important;border-radius:20px!important;border:0!important;background:var(--surface)!important;box-shadow:0 10px 30px rgb(19 33 26 / .14)!important;padding:16px 64px 16px 18px!important;font-size:16px!important;font-weight:600;line-height:24px!important;resize:none}
+.qd-add{width:56px;height:56px;border-radius:20px;border:0;flex:none;display:grid;place-items:center;background:var(--ink);color:var(--bg);box-shadow:0 10px 30px rgb(19 33 26 / .18)}
+.qd-mic,.qd-go{position:absolute;right:18px;width:44px;height:44px;border-radius:15px;border:0;display:grid;place-items:center;background:var(--hi)!important;color:var(--hi-ink)!important}
+.qd-go{display:none}
+.qdock:has(#qeIn:not(:placeholder-shown)) .qd-go{display:grid}
+.qdock:has(#qeIn:not(:placeholder-shown)) .qd-mic{display:none}
+.qdock:not(:has(.qd-mic)) .qd-go{display:grid}
+body:has(#qdock) #fab{display:none}
+#view:has(#qdock){padding-bottom:calc(var(--tab-h) + 96px)}
+.qdock.busy{opacity:.6;pointer-events:none}
+/* averages sheet */
+.av-hero{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;background:var(--surface);border-radius:20px;padding:16px;box-shadow:var(--card-sh)}
+.av-hero>div:not(.av-vs){display:grid}
+.av-hero>div:last-child{text-align:right}
+.av-hero small{font-size:13px;color:var(--muted);font-weight:700}
+.av-hero b{font:800 28px/1.1 var(--f-display);letter-spacing:-.02em}
+.av-hero span{font-size:12.5px;color:var(--muted);font-weight:600}
+.av-vs em{font-style:normal;font-weight:800;font-size:14px;padding:4px 10px;border-radius:99px;background:var(--surface-2)}
+.av-vs em.up{color:var(--expense);background:color-mix(in srgb,var(--expense) 13%,transparent)}
+.av-vs em.down{color:var(--income);background:color-mix(in srgb,var(--income) 14%,transparent)}
+.av-note{margin:0;font-size:13px;color:var(--muted);font-weight:600;line-height:1.45}
+.av-t{padding:4px 16px!important}
+.av-r{display:grid;grid-template-columns:1fr 92px 100px;gap:8px;align-items:center;padding:10px 0;border-top:1px solid var(--line);font-size:14.5px}
+.av-r:first-child,.av-r.hd+.av-r{border-top:0}
+.av-r.hd{font-size:12.5px;color:var(--muted);font-weight:700;padding-bottom:2px}
+.av-r>*:not(:first-child){text-align:right}
+.av-r span:first-child{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.av-r b{font-weight:800}.av-r b.hi{color:var(--expense)}
+.av-bars{display:flex;align-items:flex-end;gap:10px;height:170px;position:relative}
+.avb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:4px}
+.avb i{width:100%;max-width:38px;border-radius:8px 8px 3px 3px;background:color-mix(in srgb,var(--ink) 22%,var(--surface));display:block}
+.avb.cur i{background:repeating-linear-gradient(135deg,var(--ink) 0 6px,color-mix(in srgb,var(--ink) 70%,var(--surface)) 6px 9px)}
+.avb-v{font-size:11.5px;font-weight:800;color:var(--muted)}
+.avb-m{font-size:12px;font-weight:700;color:var(--muted)}
+.av-wd{display:flex;align-items:flex-end;gap:8px;height:110px}
+.av-wd div{flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:5px}
+.av-wd i{width:100%;border-radius:6px;background:color-mix(in srgb,var(--ink) 18%,var(--surface));display:block}
+.av-wd .wtop i{background:var(--ink)}
+.av-wd span{font-size:12px;font-weight:700;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -900,7 +992,7 @@ body.listening .qb-mic{background:var(--expense);color:#fff;animation:pulse 1s i
 
 <script>
 'use strict';
-const APP_VERSION = '2.3.0';
+const APP_VERSION = '3.0.0';
 
 /* ---------------- helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
@@ -1064,6 +1156,7 @@ const DEF_INC = [
 ];
 const THEMES = [
   { id: 'system', name: 'Auto', bg: 'linear-gradient(135deg,#F1F3F7 50%,#0D1015 50%)', a: '#3046C8' },
+  { id: 'leaf', name: 'Leaf', bg: '#EEF3EF', a: '#1F8A55' },
   { id: 'light', name: 'Passbook', bg: '#F1F3F7', a: '#3046C8' },
   { id: 'dark', name: 'Night', bg: '#0D1015', a: '#8B9BFF' },
   { id: 'ocean', name: 'Ocean', bg: '#081A26', a: '#3CD3E0' },
@@ -1093,6 +1186,7 @@ function migrate(st) {
   if (st.settings.trip && st.settings.trip.until && st.settings.trip.until < today()) st.settings.trip = null;
   if (!st.settings.v17) { st.settings.v17 = 1; st.settings.theme = 'saffron'; st.settings.smsClipboard = false; }
   if (st.settings.theme === 'coral') st.settings.theme = 'saffron';
+  if (!st.settings.look3) { st.settings.look3 = 1; st.settings.theme = 'leaf'; } // the Big & simple look
   st.settings = Object.assign(d.settings, st.settings || {});
   st.categories.forEach(c => { c.subs ||= []; c.budget = +c.budget || 0; });
   st.accounts.forEach(a => { a.opening = +a.opening || 0; a.limit = +a.limit || 0; a.last4 ||= ''; });
@@ -1273,6 +1367,94 @@ function attnSheetHTML() {
   if (!urgent.length && !over.length && !spikes.length && !ws.length) h += `<div class="card empty"><b>All clear</b><span>Nothing needs you right now.</span></div>`;
   return h + '</div>';
 }
+/* ---------------- Big & simple Home (3.0) + averages ---------------- */
+// day-to-day spending: leaves out EMIs, bill-linked payments, card fees, investments and once-a-year lumps
+function everyday(from, to, lumps = lumpIds()) { let s = 0, n = 0; const by = {};
+  for (const t of S.txns) { if (t.type !== 'expense' || t.date < from || t.date > to || t.emiId || t.billId || t.feeFor || lumps.has(t.id)) continue; const c = catById(t.catId); if (c && SPIKE_SKIP.test(c.name)) continue;
+    s += t.amount; n++; by[t.date] = (by[t.date] || 0) + t.amount; }
+  return { total: round2(s), n, by };
+}
+const weekStart = d => { const x = parseYmd(d), wd = (x.getDay() + 6) % 7; return addDays(d, -wd); }; // Monday
+const daysIn = (from, to) => daysBetween(from, to) + 1;
+function avgNow(td = today()) {
+  const L = lumpIds(), ws = weekStart(td), wk = everyday(ws, td, L), wDays = daysIn(ws, td);
+  const lm = shiftMonth(td.slice(0, 7), -1), lmFrom = lm + '-01', lmTo = monthEnd(lm), lmS = everyday(lmFrom, lmTo, L), lmDays = daysIn(lmFrom, lmTo);
+  const firstTx = S.txns.reduce((m, t) => t.date < m ? t.date : m, td);
+  const week = wk.total / wDays, last = lmFrom >= firstTx.slice(0, 7) + '-01' || lmS.total > 0 ? lmS.total / lmDays : 0;
+  return { week, last, lm, pct: last > 0 ? Math.round((week / last - 1) * 100) : null, wDays };
+}
+function homeBigHTML(td, hb) {
+  const mk = td.slice(0, 7), t0 = rangeTotals(td, td), mt = rangeTotals(mk + '-01', td), dayN = +td.slice(8), dim = parseYmd(monthEnd(mk)).getDate();
+  const ev = everyday(mk + '-01', td).by, vals = []; for (let i = 1; i <= dim; i++) { const d = `${mk}-${pad(i)}`; vals.push([d, d <= td ? (ev[d] || 0) : null]); }
+  const max = Math.max(1, ...vals.map(v => v[1] || 0));
+  const big = hb ? '••••' : Math.round(t0.exp).toLocaleString('en-IN'), tPos = ((dayN - .5) / dim * 100).toFixed(1);
+  return `<section class="bigtoday"><button class="bt-k" data-act="toggleBal" aria-label="${hb ? 'Show' : 'Hide'} amounts">Spent today ${ic(hb ? 'eye' : 'eyeOff', 15)}</button>
+    <div class="bt-v${big.length > 6 ? ' long' : ''}"><span>₹</span>${big}</div>
+    <div class="bt-s">${MONTHS[+mk.slice(5) - 1]} so far <b>${hb ? '••••' : rupees(mt.exp)}</b>${mt.inc ? ` · earned ${hb ? '••••' : compact(mt.inc)}` : ''}</div>
+    <button class="bt-bars" data-act="calOpen" aria-label="Open the month calendar">${vals.map(([d, v]) => `<i class="${d === td ? 't' : v === null ? 'f' : ''}" style="height:${v === null ? 6 : Math.max(6, Math.round(v / max * 100))}%"></i>`).join('')}</button>
+    <div class="bt-ax"><span>1 ${MON[+mk.slice(5) - 1]}</span>${dayN > 4 && dayN < dim - 3 ? `<span class="bt-td" style="left:${tPos}%">today</span>` : ''}<span>${dim}</span></div></section>`;
+}
+function homeAvgHTML(td, hb) {
+  const a = avgNow(td); if (!a.week && !a.last) return '';
+  const up = a.pct !== null && a.pct > 0, ch = a.pct === null ? '' : a.pct === 0 ? 'same as' : `${Math.abs(a.pct)}% ${up ? 'more than' : 'less than'}`;
+  return `<button class="avgbox${up ? ' up' : ' down'}" data-act="avgSheet"><span class="ab-l"><small>Daily average this week</small><b>${hb ? '••••' : rupees(Math.round(a.week))}</b></span>
+    <span class="ab-r">${a.pct !== null ? `<span class="ab-p">${a.pct === 0 ? '=' : up ? '▲' : '▼'} ${Math.abs(a.pct)}%</span><small>vs ${hb ? '••••' : rupees(Math.round(a.last))} a day in ${MON[+a.lm.slice(5) - 1]}</small>` : `<small>Not enough history yet</small>`}</span>${ic('chevR', 16)}</button>`;
+}
+function homeStripHTML(td) {
+  const L = attnItems(td); if (!L.length) return '';
+  const o = L[0], due = dueItems(td).filter(isUrgent)[0], isBill = o.act === 'editBill' || o.act === 'cardSheet';
+  const btn = isBill && due ? `<button class="st-b" data-act="${due.kind === 'card' ? 'cardPay' : 'billPay'}" data-id="${due.id}" data-v="${due.kind === 'card' ? due.amount : ''}">Pay</button>` : `<button class="st-b" data-act="attnSheet">See</button>`;
+  return `<section class="strip t-${o.tone}"><button class="st-t" data-act="${L.length > 1 ? 'attnSheet' : o.act}"${o.id && L.length === 1 ? ` data-id="${o.id}"` : ''}${o.v && L.length === 1 ? ` data-v="${o.v}"` : ''}><b>${esc(o.t)}${o.amt ? ' · ₹' + esc(o.amt.replace(/^₹/, '')) : ''}</b><small>${esc(o.s)}${L.length > 1 ? ` · ${L.length - 1} more to look at` : ''}</small></button>${btn}</section>`;
+}
+function homeTodayHTML(td) {
+  const tl = S.txns.filter(t => t.date === td).sort(sortTx);
+  const prevDay = !tl.length ? S.txns.filter(t => t.date < td).sort(sortTx)[0] : null;
+  let h = `<section class="plain"><div class="pl-h"><h2>Today</h2><span>${tl.length ? `${tl.length} ${tl.length === 1 ? 'entry' : 'entries'}` : ''}</span></div>`;
+  h += tl.length ? `<div class="pl-list txlist">${tl.map(txRow).join('')}</div>` : `<p class="pl-empty">Nothing added today. Type what you spent in the box below, or tap +.</p>`;
+  if (S.txns.some(t => t.date < td)) h += `<button class="home-more" data-act="tab" data-v="txns">${prevDay ? `Last entry: ${esc(txTitle(prevDay))}, ${fmtShort(prevDay.date)} · ` : ''}See all</button>`;
+  return h + '</section>';
+}
+function dockHTML() {
+  return `<div class="qdock" id="qdock"><button class="qd-add" data-act="newTx" aria-label="Add with the full form">${ic('plus', 22)}</button><input type="text" id="qeIn" placeholder="What did you spend?" autocomplete="off" aria-label="Type an entry in one line">${micOK() ? `<button class="qd-mic qb-mic" data-act="qeMic" aria-label="Say an entry">${ic('mic', 21)}</button>` : ''}<button class="qd-go qb-go" data-act="qeGo" aria-label="Fill in the entry">${ic('send', 19)}</button></div>`;
+}
+// keep the box above the phone keyboard
+(function () { const vv = window.visualViewport; if (!vv) return; const f = () => { const d = document.getElementById('qdock'); if (!d) return; const k = Math.max(0, innerHeight - vv.height - vv.offsetTop); d.style.transform = k > 60 ? `translateY(${-(k - (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--tab-h')) || 66))}px)` : ''; d.classList.toggle('kb', k > 60); }; vv.addEventListener('resize', f); vv.addEventListener('scroll', f); })();
+
+/* averages sheet */
+function avgSheetHTML() {
+  const td = today(), mk = td.slice(0, 7), L = lumpIds(), hb = S.settings.hideBal, R = v => hb ? '••••' : rupees(Math.round(v));
+  const firstTx = S.txns.filter(t => t.type === 'expense').reduce((m, t) => t.date < m ? t.date : m, td);
+  const per = (from, to) => { from = from < firstTx ? firstTx : from; if (from > to) return null; const e = everyday(from, to, L), all = rangeTotals(from, to), n = daysIn(from, to); return { day: e.total / n, month: e.total / n * 30.44, allMonth: all.exp / n * 30.44, days: n }; };
+  const lm = shiftMonth(mk, -1), y = td.slice(0, 4);
+  const rows = [['This week', per(weekStart(td), td)], ['Last 7 days', per(addDays(td, -6), td)], [`${MONTHS[+mk.slice(5) - 1]} so far`, per(mk + '-01', td)], [`${MONTHS[+lm.slice(5) - 1]}`, per(lm + '-01', monthEnd(lm))],
+    ['Last 3 months', per(shiftMonth(mk, -3) + '-01', monthEnd(lm))], ['Last 6 months', per(shiftMonth(mk, -6) + '-01', monthEnd(lm))], [`${y} so far`, per(y + '-01-01', td)]].filter(r => r[1]);
+  const a = avgNow(td);
+  let h = head('Your averages') + '<div class="sh-body">';
+  h += `<div class="av-hero"><div><small>This week</small><b>${R(a.week)}</b><span>a day</span></div><div class="av-vs">${a.pct === null ? '' : a.pct > 0 ? `<em class="up">▲ ${a.pct}%</em>` : a.pct < 0 ? `<em class="down">▼ ${-a.pct}%</em>` : '<em>same</em>'}</div><div><small>${MONTHS[+a.lm.slice(5) - 1]}</small><b>${R(a.last)}</b><span>a day</span></div></div>`;
+  h += `<p class="av-note">Day-to-day spending: food, travel, shopping, bills and so on. EMIs, investments and once-a-year payments are left out so they don't distort the average.</p>`;
+  h += `<section class="sec"><div class="sec-h"><h2>Averages</h2></div><div class="card av-t"><div class="av-r hd"><span></span><span>Per day</span><span>Per month</span></div>${rows.map(([l, r]) => `<div class="av-r"><span>${esc(l)}</span><b class="num">${R(r.day)}</b><b class="num">${R(r.month)}</b></div>`).join('')}</div></section>`;
+  // month by month
+  const ms = []; for (let i = 5; i >= 0; i--) { const m = shiftMonth(mk, -i), to = i === 0 ? td : monthEnd(m); if (to < firstTx) continue; const from = (m + '-01') < firstTx ? firstTx : m + '-01'; const e = everyday(from, to, L).total; ms.push({ m, v: e, d: daysIn(from, to), cur: i === 0 }); }
+  if (ms.length >= 2) { const full = ms.filter(x => !x.cur), av = full.length ? full.reduce((s, x) => s + x.v, 0) / full.length : 0, mx = Math.max(1, ...ms.map(x => x.cur ? x.v / x.d * 30.44 : x.v));
+    h += `<section class="sec"><div class="sec-h"><h2>Month by month</h2><span class="small muted" style="font-weight:700">average ${R(av)}</span></div><div class="card pad av-bars">${ms.map(x => { const v = x.cur ? x.v / x.d * 30.44 : x.v; return `<div class="avb${x.cur ? ' cur' : ''}"><span class="avb-v num">${hb ? '' : compact(x.cur ? x.v : x.v)}</span><i style="height:${Math.max(4, v / mx * 100).toFixed(1)}%"></i><span class="avb-m">${MON[+x.m.slice(5) - 1]}</span></div>`; }).join('')}</div>${ms.some(x => x.cur) ? `<p class="av-note">${MONTHS[+mk.slice(5) - 1]} shows what you have spent so far; its bar is drawn at this month's pace.</p>` : ''}</section>`; }
+  // quarters
+  const qOf = m => { const yy = +m.slice(0, 4), mm = +m.slice(5); return `${yy}-Q${Math.floor((mm - 1) / 3) + 1}`; }, qs = {};
+  for (let i = 0; i < 12; i++) { const m = shiftMonth(mk, -i), to = i === 0 ? td : monthEnd(m); if (to < firstTx) continue; const from = (m + '-01') < firstTx ? firstTx : m + '-01'; const k = qOf(m); (qs[k] ||= { v: 0, d: 0, ms: [] }); qs[k].v += everyday(from, to, L).total; qs[k].d += daysIn(from, to); qs[k].ms.unshift(MON[+m.slice(5) - 1]); }
+  const qk = Object.keys(qs).sort().reverse().slice(0, 4);
+  if (qk.length >= 1) h += `<section class="sec"><div class="sec-h"><h2>By quarter</h2></div><div class="card av-t"><div class="av-r hd"><span></span><span>Spent</span><span>Per month</span></div>${qk.map(k => `<div class="av-r"><span>${['Jan–Mar', 'Apr–Jun', 'Jul–Sep', 'Oct–Dec'][+k.slice(-1) - 1]} ${k.slice(0, 4)}</span><b class="num">${R(qs[k].v)}</b><b class="num">${R(qs[k].v / qs[k].d * 30.44)}</b></div>`).join('')}</div></section>`;
+  // by category
+  const pm = [1, 2, 3].map(i => shiftMonth(mk, -i)).filter(m => monthEnd(m) >= firstTx);
+  if (pm.length) { const cur = monthCatTotals(mk, td, L), prev = pm.map(m => monthCatTotals(m, null, L)), pace = (+td.slice(8)) / parseYmd(monthEnd(mk)).getDate();
+    const rows2 = S.categories.filter(c => c.type === 'expense' && !SPIKE_SKIP.test(c.name)).map(c => ({ c, avg: prev.reduce((s, p) => s + (p[c.id] ? p[c.id].total : 0), 0) / pm.length, now: cur[c.id] ? cur[c.id].total : 0 })).filter(r => r.avg > 0 || r.now > 0).sort((a, b) => b.avg - a.avg).slice(0, 8);
+    if (rows2.length) h += `<section class="sec"><div class="sec-h"><h2>By category, per month</h2><span class="small muted" style="font-weight:700">last ${pm.length} month${pm.length > 1 ? 's' : ''}</span></div><div class="card av-t c4"><div class="av-r hd"><span></span><span>Usual</span><span>This month</span></div>${rows2.map(r => { const exp = r.avg * pace, hi = r.now > exp * 1.15 && r.now - exp > 300; return `<div class="av-r"><span>${esc(r.c.icon || '')} ${esc(r.c.name)}</span><b class="num">${R(r.avg)}</b><b class="num${hi ? ' hi' : ''}">${R(r.now)}</b></div>`; }).join('')}</div><p class="av-note">“This month” turns red when it is well ahead of your usual pace for this point in the month.</p></section>`; }
+  // weekdays
+  const from90 = addDays(td, -90) < firstTx ? firstTx : addDays(td, -90), e90 = everyday(from90, td, L).by, wd = [0, 0, 0, 0, 0, 0, 0], wn = [0, 0, 0, 0, 0, 0, 0];
+  for (let d = from90; d <= td; d = addDays(d, 1)) { const k = (parseYmd(d).getDay() + 6) % 7; wd[k] += e90[d] || 0; wn[k]++; }
+  const wa = wd.map((v, i) => wn[i] ? v / wn[i] : 0), wmx = Math.max(1, ...wa), top = wa.indexOf(Math.max(...wa)), WD = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], WDL = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  if (wmx > 1 && daysIn(from90, td) >= 14) h += `<section class="sec"><div class="sec-h"><h2>By day of the week</h2><span class="small muted" style="font-weight:700">last ${Math.min(90, daysIn(from90, td))} days</span></div><div class="card pad"><p class="av-note" style="margin:0 0 10px">You spend the most on <b>${WDL[top]}s</b>: about ${R(wa[top])} on an average ${WDL[top]}.</p><div class="av-wd">${wa.map((v, i) => `<div class="${i === top ? 'wtop' : ''}"><i style="height:${Math.max(4, v / wmx * 100).toFixed(1)}%"></i><span>${WD[i]}</span></div>`).join('')}</div></div></section>`;
+  return h + '</div>';
+}
+
 function viewHome() {
   const td = today(), mk = td.slice(0, 7), bal = balances();
   let assets = 0, liab = 0; S.accounts.filter(a => !a.archived).forEach(a => { const v = bal[a.id] || 0; if (v >= 0) assets += v; else liab += -v; });
@@ -1281,8 +1463,8 @@ function viewHome() {
   const budTotal = budCats.reduce((s, c) => s + c.budget, 0); const budSpent = budCats.reduce((s, c) => s + catSpent(c.id, mk), 0);
   const dim = parseYmd(monthEnd(mk)).getDate(); const left = dim - dayN + 1;
   const d = parseYmd(td), hb = S.settings.hideBal, dots = '₹ ••••••';
-  let h = `<header class="top"><div class="brand-row"><span class="logo-sm">${logoSVG()}</span><div><div class="brand">Hisaab</div><div class="sub"><button class="prof-pill" data-act="accountSheet" aria-label="Profiles and sign-in">${esc(curProfile().icon || '')} ${esc(curProfile().name)}${ic('chevR', 12)}</button> · ${d.getDate()} ${MON[d.getMonth()]}</div></div></div>
-    <div class="top-actions">${isDesktop() ? `<button class="icon-btn boxed" data-act="openMini" aria-label="Open the mini window" title="Mini window that stays on top (M)">${ic('pip')}</button>` : ''}<button class="ask-pill" data-act="askOpen" aria-label="Ask Hisaab AI">${ic('sparkle', 17)} Ask AI</button><button class="icon-btn boxed" data-act="lendSheet" aria-label="Lend and borrow" title="Lend & borrow">${ic('people')}</button></div></header>`;
+  let h = `<header class="top simple"><div class="brand-row"><span class="logo-sm">${logoSVG()}</span><div class="brand">Hisaab</div></div>
+    <div class="top-actions">${isDesktop() ? `<button class="icon-btn boxed" data-act="openMini" aria-label="Open the mini window" title="Mini window that stays on top (M)">${ic('pip')}</button>` : ''}<button class="prof-pill" data-act="accountSheet" aria-label="Profiles and sign-in">${esc(curProfile().name)} <span class="pp-c">▾</span></button><button class="icon-btn boxed" data-act="askOpen" aria-label="Ask Hisaab AI" title="Ask AI">${ic('sparkle', 19)}</button><button class="icon-btn boxed" data-act="lendSheet" aria-label="Lend and borrow" title="Lend & borrow">${ic('people')}</button></div></header>`;
   // alerts always sit on top
   if (S.settings.sample) h += `<div class="banner">${ic('info')}<div><p>You are exploring sample data. Clear it when you are ready to add your own.</p><div class="acts"><button class="btn sm primary" data-act="clearSample">Clear sample data</button></div></div></div>`;
   h += backupBanner();
@@ -1295,8 +1477,10 @@ function viewHome() {
   const alerts = budCats.map(c => ({ c, s: catSpent(c.id, mk) })).filter(x => x.s >= x.c.budget * .9).sort((a, b) => b.s / b.c.budget - a.s / a.c.budget);
   const nws = netWorthSeries(6), nwCh = nws.length >= 2 ? round2(nws[nws.length - 1].v - nws[nws.length - 2].v) : null;
   const parts = {
-    quick: () => quickBarHTML(),
-    attention: () => attnHTML(td),
+    quick: () => dockHTML(),
+    big: () => homeBigHTML(td, hb),
+    avg: () => homeAvgHTML(td, hb),
+    attention: () => homeStripHTML(td),
     review: () => reviewCardHTML(),
     networth: () => `<section class="hero"><button class="hero-eye" data-act="toggleBal" aria-label="${hb ? 'Show' : 'Hide'} balances">${ic(hb ? 'eye' : 'eyeOff', 18)}</button><div class="lbl">Net worth</div><div class="big">${hb ? dots : rupees(assets - liab)}</div>
       ${nwCh !== null && !hb ? `<div class="hero-ch">${nwCh >= 0 ? '▲' : '▼'} ${rupees(Math.abs(nwCh))} this month</div>` : ''}
@@ -1325,7 +1509,7 @@ function viewHome() {
     subs: () => { const L = subscriptions(); if (!L.length) return ''; const m = L.reduce((s, x) => s + x.monthly, 0);
       return `<section class="sec"><div class="sec-h"><h2>Subscriptions</h2><button class="link" data-act="subsSheet">All</button></div><button class="card pad subs-card" data-act="subsSheet"><span><b class="num">${rupees(m)}</b> a month on ${L.length} subscription${L.length > 1 ? 's' : ''} · ${rupees(m * 12)} a year</span><span class="small muted">${L.slice(0, 3).map(x => esc(x.name)).join(', ')}${L.length > 3 ? '…' : ''}</span></button></section>`; },
     nwtrend: () => nwSectionHTML(),
-    days: () => homeDaysHTML(td, 'today'),
+    days: () => homeTodayHTML(td),
     week: () => homeDaysHTML(td, 'week')
   };
   const L = homeLayout();
@@ -4368,7 +4552,7 @@ let QE_BUSY = false;
 async function qeOpen(raw) {
   raw = String(raw || '').trim(); if (!raw) return toast('Type something like “450 Swiggy yesterday on card”');
   if (aiQuickOn() && navigator.onLine !== false) {
-    if (QE_BUSY) return; QE_BUSY = true; const bar = $('.qbar'); bar?.classList.add('busy'); toast('Understanding…', 15000);
+    if (QE_BUSY) return; QE_BUSY = true; const bar = $('.qbar') || $('.qdock'); bar?.classList.add('busy'); toast('Understanding…', 15000);
     try { const L = await aiParseQuick(raw); $('#toast').classList.remove('show');
       if (L.length === 1) return qeForm(L[0]); if (L.length > 1) { QE_LIST = L; const w = openSheet(qeListHTML(), { cls: 'tall' }); w._kind = 'qelist'; return; }
     } catch (e) { toast(e.name === 'AbortError' ? 'Claude took too long, so Hisaab filled it in by itself' : 'Could not reach Claude, so Hisaab filled it in by itself'); }
@@ -4686,10 +4870,10 @@ function openLoan(srcId) { const src = loanSources(); const s = src.find(x => x.
 const refreshLoan = () => { const s = sheets.find(x => x.wrap._kind === 'loan'); if (!s) return; const out = $('#lpOut', s.wrap); if (!out) return setSheet(s.wrap, loanHTML()); const tmp = document.createElement('div'); tmp.innerHTML = loanHTML(); out.innerHTML = $('#lpOut', tmp).innerHTML; };
 
 /* ---------------- customise Home ---------------- */
-const HOME_SECTIONS = [['quick', 'One-line entry', true], ['month', 'This month', true], ['attention', 'Needs attention (bills, alerts)', true], ['review', 'Last month in review', true], ['actions', 'Shortcuts', true],
-  ['days', 'Today', true], ['quickadd', 'Quick add', true], ['accounts', 'Accounts', true], ['networth', 'Net worth', false], ['week', 'Last 7 days', false], ['goals', 'Goals', false], ['emis', 'Running EMIs', false], ['lend', 'Lend & borrow', false],
+const HOME_SECTIONS = [['big', 'Spent today and this month', true], ['avg', 'Daily average', true], ['attention', 'Bills to pay and alerts', true], ['review', 'Last month in review', true], ['days', 'Today', true], ['quick', 'Type or say box', true],
+  ['actions', 'Shortcuts', false], ['quickadd', 'Quick add', false], ['accounts', 'Accounts', false], ['month', 'This month (card)', false], ['networth', 'Net worth', false], ['week', 'Last 7 days', false], ['goals', 'Goals', false], ['emis', 'Running EMIs', false], ['lend', 'Lend & borrow', false],
   ['due', 'Due soon (full list)', false], ['spikes', 'Spending alerts (full)', false], ['budgetalerts', 'Budget alerts (full)', false], ['warranty', 'Warranties ending soon', false], ['subs', 'Subscriptions', false], ['nwtrend', 'Net worth over time', false]];
-const HOME_V = 3;
+const HOME_V = 4;
 function homeLayout() { const h0 = S.settings.home || {}, h = h0.v === HOME_V ? h0 : {}, ids = HOME_SECTIONS.map(x => x[0]); let order = (h.order || []).filter(id => ids.includes(id)); ids.forEach(id => { if (!order.includes(id)) { const i = ids.indexOf(id); order.splice(Math.min(i, order.length), 0, id); } });
   const hidden = h.hidden || Object.fromEntries(HOME_SECTIONS.filter(x => !x[2]).map(x => [x[0], true])); return { v: HOME_V, order, hidden }; }
 function homeEditHTML() {
@@ -5301,7 +5485,7 @@ const A = {
   reviewOpen: b => { const mk = b.dataset.v || shiftMonth(today().slice(0, 7), -1); const w = openSheet(reviewHTML(mk), { cls: 'tall' }); w._kind = 'review'; },
   reviewMove: b => { const mk = shiftMonth(RV_MK, +b.dataset.d); if (mk > today().slice(0, 7)) return; const s2 = sheets.find(x => x.wrap._kind === 'review'); if (s2) setSheet(s2.wrap, reviewHTML(mk)); },
   reviewSeen: b => { S.settings.reviewSeen = b.dataset.v; save(); render(); },
-  calOpen: () => { CAL = { mk: today().slice(0, 7), sel: today() }; const w = openSheet(calendarHTML(), { cls: 'tall' }); w._kind = 'cal'; },
+  calOpen: b => { const d0 = b && b.dataset && /^\d{4}-\d\d-\d\d$/.test(b.dataset.v || '') ? b.dataset.v : today(); CAL = { mk: d0.slice(0, 7), sel: d0 }; const w = openSheet(calendarHTML(), { cls: 'tall' }); w._kind = 'cal'; },
   calMove: b => { CAL.mk = shiftMonth(CAL.mk, +b.dataset.d); CAL.sel = CAL.mk === today().slice(0, 7) ? today() : ''; refreshCal(); },
   calDay: b => { CAL.sel = CAL.sel === b.dataset.v ? '' : b.dataset.v; refreshCal(); },
   calAdd: b => openTx(newForm('expense', { date: b.dataset.v })),
@@ -5318,6 +5502,7 @@ const A = {
   loanSheet: () => openLoan(),
   lpSrc: b => { const x = loanSources().find(y => y.id === b.dataset.v); if (!x) return; Object.assign(LP, { src: x.id, PStr: String(Math.round(x.P)), emiStr: x.emi ? String(x.emi) : LP.emiStr, rate: String((S.settings.loanRates || {})[x.id] ?? x.rate ?? LP.rate) }); const s2 = sheets.find(y => y.wrap._kind === 'loan'); if (s2) setSheet(s2.wrap, loanHTML()); },
   lpMode: b => { LP.mode = b.dataset.v; const s2 = sheets.find(y => y.wrap._kind === 'loan'); if (s2) setSheet(s2.wrap, loanHTML()); },
+  avgSheet: () => { const w = openSheet(avgSheetHTML(), { cls: 'tall' }); w._kind = 'avg'; },
   attnSheet: () => { const w = openSheet(attnSheetHTML(), { cls: 'tall' }); w._kind = 'attn'; },
   homeEdit: () => { const w = openSheet(homeEditHTML(), { cls: 'tall' }); w._kind = 'homeedit'; },
   homeToggle: b => { const L = homeLayout(); L.hidden[b.dataset.v] = !L.hidden[b.dataset.v]; S.settings.home = L; save(); refreshHomeEdit(); render(); },
