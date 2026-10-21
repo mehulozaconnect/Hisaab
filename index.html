@@ -908,7 +908,7 @@ html[data-theme="leaf"] body{background:var(--bg)}
 .bt-bars .t i{background:color-mix(in srgb,var(--ink) 45%,var(--bg))}
 .bt-bars .f i{background:color-mix(in srgb,var(--ink) 6%,var(--bg))}
 .bt-bars .on i{background:var(--ink)}
-.bt-bars .on{background:color-mix(in srgb,var(--ink) 7%,transparent)}
+
 .bt-ax{position:relative;height:18px;margin-top:4px;font-size:12px;color:var(--muted);font-weight:700}
 .bt-ax span{position:absolute;transform:translateX(-50%);white-space:nowrap}
 .bt-ax span:first-child{transform:none;left:0!important}
@@ -918,7 +918,9 @@ html[data-theme="leaf"] body{background:var(--bg)}
 .bd-h span{color:var(--muted);font-weight:600;font-size:13.5px;flex:1}
 .bd-h .link{font-size:13.5px;display:inline-flex;align-items:center;gap:2px}
 .bd-top{display:flex;flex-wrap:wrap;gap:6px}
-.bd-top span{font-size:13px;font-weight:600;padding:4px 10px;border-radius:99px;background:var(--surface-2);color:var(--ink)}
+.bt-day,.bigtoday{-webkit-user-select:none;user-select:none}
+.bd-top button{border:0;font:inherit;font-size:13px;font-weight:600;padding:4px 10px;border-radius:99px;background:var(--surface-2);color:var(--ink)}
+.bd-top button:active{background:var(--accent-soft)}
 .bd-top b{font-weight:800}
 .bd-top .more{color:var(--muted)}
 .bt-td{position:absolute;transform:translateX(-50%);color:var(--ink)}
@@ -1005,7 +1007,7 @@ body:has(#qdock) #fab{display:none}
 
 <script>
 'use strict';
-const APP_VERSION = '3.0.1';
+const APP_VERSION = '3.0.2';
 
 /* ---------------- helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
@@ -1393,8 +1395,9 @@ function avgNow(td = today()) {
   const L = lumpIds(), ws = weekStart(td), wk = everyday(ws, td, L), wDays = daysIn(ws, td);
   const lm = shiftMonth(td.slice(0, 7), -1), lmFrom = lm + '-01', lmTo = monthEnd(lm), lmS = everyday(lmFrom, lmTo, L), lmDays = daysIn(lmFrom, lmTo);
   const firstTx = S.txns.reduce((m, t) => t.date < m ? t.date : m, td);
-  const week = wk.total / wDays, last = lmFrom >= firstTx.slice(0, 7) + '-01' || lmS.total > 0 ? lmS.total / lmDays : 0;
-  return { week, last, lm, pct: last > 0 ? Math.round((week / last - 1) * 100) : null, wDays };
+  const week = wk.total / wDays; let last = lmS.total > 0 ? lmS.total / lmDays : 0, cmp = 'lm';
+  if (!last) { const mFrom = [td.slice(0, 7) + '-01', firstTx].sort()[1], ms = everyday(mFrom, td, L); if (ms.total > 0 && mFrom < ws) { last = ms.total / daysIn(mFrom, td); cmp = 'tm'; } }
+  return { week, last, lm, cmp, pct: last > 0 ? Math.round((week / last - 1) * 100) : null, wDays };
 }
 function homeBigHTML(td, hb) {
   const mk = td.slice(0, 7), t0 = rangeTotals(td, td), mt = rangeTotals(mk + '-01', td), dayN = +td.slice(8), dim = parseYmd(monthEnd(mk)).getDate();
@@ -1406,7 +1409,7 @@ function homeBigHTML(td, hb) {
   const marks = [1, 8, 15, 22, 29].filter(x => x <= dim).map(x => `<span style="left:${((x - .5) / dim * 100).toFixed(2)}%"${x === dayN ? ' class="now"' : ''}>${x === 1 ? `1 ${MON[+mk.slice(5) - 1]}` : x}</span>`).join('');
   const sl = S.txns.filter(t => t.date === sel && t.type === 'expense').sort((a, b) => b.amount - a.amount), sv = sl.reduce((s, t) => s + t.amount, 0);
   const label = sel === td ? 'Today' : sel === addDays(td, -1) ? 'Yesterday' : `${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][parseYmd(sel).getDay()]}, ${fmtShort(sel)}`;
-  const detail = `<div class="bt-day"><div class="bd-h"><b>${label}</b><span>${sl.length ? `${hb ? '••••' : rupees(sv)} spent · ${sl.length} ${sl.length === 1 ? 'entry' : 'entries'}` : 'Nothing spent'}</span><button class="link" data-act="calOpen" data-v="${sel}">Open day ${ic('chevR', 13)}</button></div>${sl.length ? `<div class="bd-top">${sl.slice(0, 3).map(t => `<span>${esc(txTitle(t))} <b>${hb ? '••' : rupees(t.amount)}</b></span>`).join('')}${sl.length > 3 ? `<span class="more">+${sl.length - 3} more</span>` : ''}</div>` : ''}</div>`;
+  const detail = `<div class="bt-day"><div class="bd-h"><b>${label}</b><span>${sl.length ? `${hb ? '••••' : rupees(sv)} spent · ${sl.length} ${sl.length === 1 ? 'entry' : 'entries'}` : 'Nothing spent'}</span><button class="link" data-act="calOpen" data-v="${sel}">Open day ${ic('chevR', 13)}</button></div>${sl.length ? `<div class="bd-top">${(ui.barMore === sel ? sl : sl.slice(0, 3)).map(t => `<button data-act="editTx" data-id="${t.id}">${esc(txTitle(t))} <b>${hb ? '••' : rupees(t.amount)}</b></button>`).join('')}${sl.length > 3 ? `<button class="more" data-act="barMore" data-v="${sel}">${ui.barMore === sel ? 'Show less' : `+${sl.length - 3} more`}</button>` : ''}</div>` : ''}</div>`;
   return `<section class="bigtoday"><button class="bt-k" data-act="toggleBal" aria-label="${hb ? 'Show' : 'Hide'} amounts">Spent today ${ic(hb ? 'eye' : 'eyeOff', 15)}</button>
     <div class="bt-v${big.length > 6 ? ' long' : ''}"><span>₹</span>${big}</div>
     <div class="bt-s">${MONTHS[+mk.slice(5) - 1]} so far <b>${hb ? '••••' : rupees(mt.exp)}</b>${mt.inc ? ` · earned ${hb ? '••••' : compact(mt.inc)}` : ''}</div>
@@ -1416,7 +1419,7 @@ function homeAvgHTML(td, hb) {
   const a = avgNow(td); if (!a.week && !a.last) return '';
   const up = a.pct !== null && a.pct > 0, ch = a.pct === null ? '' : a.pct === 0 ? 'same as' : `${Math.abs(a.pct)}% ${up ? 'more than' : 'less than'}`;
   return `<button class="avgbox${up ? ' up' : ' down'}" data-act="avgSheet"><span class="ab-l"><small>Daily average this week</small><b>${hb ? '••••' : rupees(Math.round(a.week))}</b></span>
-    <span class="ab-r">${a.pct !== null ? `<span class="ab-p">${a.pct === 0 ? '=' : up ? '▲' : '▼'} ${Math.abs(a.pct)}%</span><small>vs ${hb ? '••••' : rupees(Math.round(a.last))} a day in ${MON[+a.lm.slice(5) - 1]}</small>` : `<small>Not enough history yet</small>`}</span>${ic('chevR', 16)}</button>`;
+    <span class="ab-r">${a.pct !== null ? `<span class="ab-p">${a.pct === 0 ? '=' : up ? '▲' : '▼'} ${Math.abs(a.pct)}%</span><small>vs ${hb ? '••••' : rupees(Math.round(a.last))} a day ${a.cmp === 'tm' ? 'this month' : 'in ' + MON[+a.lm.slice(5) - 1]}</small>` : `<small>Compared with last month once you have a month of entries</small>`}</span>${ic('chevR', 16)}</button>`;
 }
 function homeStripHTML(td) {
   const L = attnItems(td); if (!L.length) return '';
@@ -1448,7 +1451,7 @@ function avgSheetHTML() {
     ['Last 3 months', per(shiftMonth(mk, -3) + '-01', monthEnd(lm))], ['Last 6 months', per(shiftMonth(mk, -6) + '-01', monthEnd(lm))], [`${y} so far`, per(y + '-01-01', td)]].filter(r => r[1]);
   const a = avgNow(td);
   let h = head('Your averages') + '<div class="sh-body">';
-  h += `<div class="av-hero"><div><small>This week</small><b>${R(a.week)}</b><span>a day</span></div><div class="av-vs">${a.pct === null ? '' : a.pct > 0 ? `<em class="up">▲ ${a.pct}%</em>` : a.pct < 0 ? `<em class="down">▼ ${-a.pct}%</em>` : '<em>same</em>'}</div><div><small>${MONTHS[+a.lm.slice(5) - 1]}</small><b>${R(a.last)}</b><span>a day</span></div></div>`;
+  h += `<div class="av-hero"><div><small>This week</small><b>${R(a.week)}</b><span>a day</span></div><div class="av-vs">${a.pct === null ? '' : a.pct > 0 ? `<em class="up">▲ ${a.pct}%</em>` : a.pct < 0 ? `<em class="down">▼ ${-a.pct}%</em>` : '<em>same</em>'}</div><div><small>${a.cmp === 'tm' ? 'This month' : MONTHS[+a.lm.slice(5) - 1]}</small><b>${a.last ? R(a.last) : '—'}</b><span>a day</span></div></div>`;
   h += `<p class="av-note">Day-to-day spending: food, travel, shopping, bills and so on. EMIs, investments and once-a-year payments are left out so they don't distort the average.</p>`;
   h += `<section class="sec"><div class="sec-h"><h2>Averages</h2></div><div class="card av-t"><div class="av-r hd"><span></span><span>Per day</span><span>Per month</span></div>${rows.map(([l, r]) => `<div class="av-r"><span>${esc(l)}</span><b class="num">${R(r.day)}</b><b class="num">${R(r.month)}</b></div>`).join('')}</div></section>`;
   // month by month
@@ -5520,7 +5523,8 @@ const A = {
   loanSheet: () => openLoan(),
   lpSrc: b => { const x = loanSources().find(y => y.id === b.dataset.v); if (!x) return; Object.assign(LP, { src: x.id, PStr: String(Math.round(x.P)), emiStr: x.emi ? String(x.emi) : LP.emiStr, rate: String((S.settings.loanRates || {})[x.id] ?? x.rate ?? LP.rate) }); const s2 = sheets.find(y => y.wrap._kind === 'loan'); if (s2) setSheet(s2.wrap, loanHTML()); },
   lpMode: b => { LP.mode = b.dataset.v; const s2 = sheets.find(y => y.wrap._kind === 'loan'); if (s2) setSheet(s2.wrap, loanHTML()); },
-  barPick: b => { ui.barSel = b.dataset.v; render(); },
+  barPick: b => { ui.barSel = b.dataset.v; ui.barMore = ''; render(); },
+  barMore: b => { ui.barMore = ui.barMore === b.dataset.v ? '' : b.dataset.v; render(); },
   avgSheet: () => { const w = openSheet(avgSheetHTML(), { cls: 'tall' }); w._kind = 'avg'; },
   attnSheet: () => { const w = openSheet(attnSheetHTML(), { cls: 'tall' }); w._kind = 'attn'; },
   homeEdit: () => { const w = openSheet(homeEditHTML(), { cls: 'tall' }); w._kind = 'homeedit'; },
