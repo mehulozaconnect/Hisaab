@@ -1,5 +1,5 @@
 // Hisaab service worker: works offline, picks up new versions when online, and checks due dates in the background.
-const CACHE = 'hisaab-v3.0.4';
+const CACHE = 'hisaab-v3.0.5';
 const LIBS = 'hisaab-libs-1';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png'];
 

@@ -1016,7 +1016,7 @@ body:has(#qdock) #fab{display:none}
 
 <script>
 'use strict';
-const APP_VERSION = '3.0.4';
+const APP_VERSION = '3.0.5';
 
 /* ---------------- helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
@@ -2733,7 +2733,7 @@ function statementInfo(a, st) {
 function cycleSuspect(a, st) { // you paid the card after its last due date and before the bill date Hisaab expects: the real bill came earlier
   if (a.bills && a.bills[st]) return null; const prev = stmtOnOrBefore(a, addDays(st, -1)); if (a.cycleFrom && prev < a.cycleFrom) return null;
   const p = statementInfo(a, prev); const late = S.txns.filter(t => t.date > addDays(p.due, 2) && t.date <= st && ((t.type === 'transfer' && t.toAccountId === a.id) || (t.accountId === a.id && t.type === 'income'))).sort(sortTx);
-  if (!late.length) return null; const paidPrev = cardFlows(a, prev, st).paid; if (paidPrev < p.billed - 1) return null;
+  if (!late.length) return null;
   return { pay: late[0], amount: round2(late.reduce((x, t) => x + t.amount, 0)) };
 }
 function cardStatus(a, td = today()) {
