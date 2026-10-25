@@ -1016,7 +1016,7 @@ body:has(#qdock) #fab{display:none}
 
 <script>
 'use strict';
-const APP_VERSION = '3.0.6';
+const APP_VERSION = '3.0.7';
 
 /* ---------------- helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
@@ -2730,7 +2730,7 @@ function statementInfo(a, st) {
   let calc = billed;
   if (ov) { billed = round2(ov.total); if (ov.min != null && ov.min !== '') min = round2(ov.min); if (ov.due) due = ov.due; src = ov.src || 'manual'; }
   else if (billed >= 1) { // an exact amount paid after the bill date (₹14,897.33) is the bank's statement amount: trust it over the calculation
-    const odd = v => Math.round(v * 100) % 100 !== 0 || Math.round(v) % 10 !== 0;
+    const odd = v => Math.round(v * 100) % 100 !== 0; // statement totals carry paise; part payments are usually whole rupees
     const p = S.txns.filter(t => t.date > st && t.date <= addDays(due, 3) && ((t.type === 'transfer' && t.toAccountId === a.id) || (t.accountId === a.id && t.type === 'income'))).sort((x, y) => x.date.localeCompare(y.date) || (x.time || '').localeCompare(y.time || ''))
       .find(t => odd(t.amount) && t.amount < billed - 1 && t.amount >= Math.max(billed * .2, min * 1.5));
     if (p) { billed = round2(p.amount); min = minDueOf(a, billed, Math.min(cyc.emi, billed)); src = 'payment'; return { st, prev, due, billed, min, src, calc, payTx: p }; }
