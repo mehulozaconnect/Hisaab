@@ -1016,7 +1016,7 @@ body:has(#qdock) #fab{display:none}
 
 <script>
 'use strict';
-const APP_VERSION = '3.0.5';
+const APP_VERSION = '3.0.6';
 
 /* ---------------- helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
@@ -2727,8 +2727,15 @@ function statementInfo(a, st) {
   const prev = stmtOnOrBefore(a, addDays(st, -1)); const cyc = cardFlows(a, prev, st);
   let billed = round2(Math.max(0, -balAt(a.id, st))), min = minDueOf(a, billed, cyc.emi), due = calcDue(a, st), src = '';
   const ov = a.bills && a.bills[st];
+  let calc = billed;
   if (ov) { billed = round2(ov.total); if (ov.min != null && ov.min !== '') min = round2(ov.min); if (ov.due) due = ov.due; src = ov.src || 'manual'; }
-  return { st, prev, due, billed, min, src };
+  else if (billed >= 1) { // an exact amount paid after the bill date (₹14,897.33) is the bank's statement amount: trust it over the calculation
+    const odd = v => Math.round(v * 100) % 100 !== 0 || Math.round(v) % 10 !== 0;
+    const p = S.txns.filter(t => t.date > st && t.date <= addDays(due, 3) && ((t.type === 'transfer' && t.toAccountId === a.id) || (t.accountId === a.id && t.type === 'income'))).sort((x, y) => x.date.localeCompare(y.date) || (x.time || '').localeCompare(y.time || ''))
+      .find(t => odd(t.amount) && t.amount < billed - 1 && t.amount >= Math.max(billed * .2, min * 1.5));
+    if (p) { billed = round2(p.amount); min = minDueOf(a, billed, Math.min(cyc.emi, billed)); src = 'payment'; return { st, prev, due, billed, min, src, calc, payTx: p }; }
+  }
+  return { st, prev, due, billed, min, src, calc };
 }
 function cycleSuspect(a, st) { // you paid the card after its last due date and before the bill date Hisaab expects: the real bill came earlier
   if (a.bills && a.bills[st]) return null; const prev = stmtOnOrBefore(a, addDays(st, -1)); if (a.cycleFrom && prev < a.cycleFrom) return null;
@@ -2776,10 +2783,11 @@ function cardCheckHTML(id) {
   const before = pays.filter(t => t.date <= c.st), last = pays[0];
   let h = head(`${a.name} bill`) + '<div class="sh-body">';
   h += `<div class="cc-view"><div><span>Bill date</span><b>${fmtDate(c.st)}</b><small>day ${a.stmtDay} of every month</small></div><div><span>Due date</span><b>${fmtDate(c.due)}</b><small>day ${a.dueDay}</small></div>
-    <div><span>Bill amount</span><b>${money(c.billed)}</b><small>${c.src ? 'from your statement' : 'worked out from your entries'}</small></div><div><span>Paid after the bill date</span><b>${money(c.paid)}</b><small>${c.paid ? '' : 'nothing yet'}</small></div>
+    <div><span>Bill amount</span><b>${money(c.billed)}</b><small>${c.src === 'payment' ? `the exact amount you paid on ${fmtShort(c.payTx.date)}` : c.src ? 'from your statement' : 'worked out from your entries'}</small></div><div><span>Paid after the bill date</span><b>${money(c.paid)}</b><small>${c.paid ? '' : 'nothing yet'}</small></div>
     <div class="cc-left"><span>Hisaab thinks is still due</span><b>${money(c.remaining)}</b></div></div>`;
   if (before.length && c.remaining >= 1) { const p0 = before[0];
     h += `<div class="banner warn">${ic('info')}<div><p>You paid <b>${money(p0.amount)}</b> on <b>${fmtDate(p0.date)}</b>, before ${fmtShort(c.st)}, the bill date set for this card. Hisaab counted it towards the previous bill. If that payment was for this bill, your card's bill date is probably earlier than day ${a.stmtDay}. Check it on your statement and fix it once below; every future bill will then be right.</p></div></div>`; }
+  if (c.src === 'payment' && c.calc - c.billed >= 1) h += `<div class="banner">${ic('info')}<div><p>Hisaab's own calculation for this bill was ${money(c.calc)}. Your payment of ${money(c.billed)} looks like the bank's statement amount, so Hisaab uses that. The ${money(c.calc - c.billed)} difference still shows in the card's balance. If your card doesn't really owe it, the opening balance in card settings is probably too high.</p></div></div>`;
   if (pays.length) h += `<section class="sec"><div class="sec-h"><h2>Payments to this card, last 60 days</h2></div><div class="card rows">${pays.map(t => `<button class="rowi" data-act="editTx" data-id="${t.id}"><span class="ico">${ic('swap', 18)}</span><span class="tt"><b>${esc(t.payee || 'Card payment')}</b><small>${fmtDate(t.date)}${t.date <= c.st ? ' · before this bill' : ' · counted for this bill'}</small></span><b class="num">${money(t.amount)}</b></button>`).join('')}</div></section>`;
   else h += `<p class="small muted" style="margin:0;font-weight:600">No payment to this card is recorded in the last 60 days. If you paid it, add the payment as a transfer from your bank account to ${esc(a.name)}.</p>`;
   h += `<div class="cc-acts"><button class="btn primary block" data-act="cardMarkPaid" data-id="${a.id}">${ic('check', 18)} This bill is paid. Stop showing it</button>
@@ -2802,7 +2810,7 @@ function cardHTML(id) {
   else if (c.state === 'grace') ban = ['danger', 'alert', `The due date (${fmtDate(c.due)}) has passed. ${c.minLeft >= 1 ? `Pay at least ${money(c.minLeft)} by ${fmtShort(addDays(c.due, 3))} to avoid a late fee.` : `Pay the remaining ${money(c.remaining)} to stop interest.`}`];
   else ban = ['danger', 'alert', `${money(c.remaining)} is overdue since ${fmtDate(c.due)}. It carries forward to the ${fmtShort(c.nx)} bill with interest${c.lateNow ? ' and a late fee' : ''}.`];
   h += `<div class="banner ${ban[0]}">${ic(ban[1])}<div><p>${ban[2]}</p></div></div>`;
-  const srcPill = c.src === 'sms' ? '<span class="pill acc-p">From bank SMS</span>' : c.src ? '<span class="pill acc-p">From statement</span>' : '<span class="pill">Calculated</span>';
+  const srcPill = c.src === 'payment' ? '<span class="pill acc-p">Matched to your payment</span>' : c.src === 'sms' ? '<span class="pill acc-p">From bank SMS</span>' : c.src ? '<span class="pill acc-p">From statement</span>' : '<span class="pill">Calculated</span>';
   const pr = c.billed > 0 ? Math.min(1, c.paid / c.billed) : 1;
   if (c.state !== 'synced') h += `<section class="card pad" style="display:flex;flex-direction:column;gap:12px">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>Bill of ${fmtDate(c.st)}</b>${srcPill}</div>
