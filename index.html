@@ -923,6 +923,15 @@ html[data-theme="leaf"] body{background:var(--bg)}
 .bd-top button:active{background:var(--accent-soft)}
 .bd-top b{font-weight:800}
 .bd-top .more{color:var(--muted)}
+.cc-view{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cc-view>div{background:var(--surface);border-radius:16px;padding:12px 14px;display:grid;gap:2px;box-shadow:var(--card-sh)}
+.cc-view span{font-size:12.5px;color:var(--muted);font-weight:700}
+.cc-view b{font-weight:800;font-size:16px}
+.cc-view small{font-size:12px;color:var(--muted);font-weight:600}
+.cc-view .cc-left{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center}
+.cc-view .cc-left b{font-size:20px;color:var(--expense)}
+.cc-acts{display:grid;gap:8px}
+.strip u{text-underline-offset:2px}
 .bt-td{position:absolute;transform:translateX(-50%);color:var(--ink)}
 .avgbox{display:flex;align-items:center;gap:12px;width:100%;border:0;text-align:left;background:var(--surface);border-radius:20px;padding:14px 14px 14px 18px;box-shadow:var(--card-sh);color:var(--ink)}
 .ab-l{display:grid;flex:none}
@@ -1007,7 +1016,7 @@ body:has(#qdock) #fab{display:none}
 
 <script>
 'use strict';
-const APP_VERSION = '3.0.2';
+const APP_VERSION = '3.0.3';
 
 /* ---------------- helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
@@ -1425,7 +1434,8 @@ function homeStripHTML(td) {
   const L = attnItems(td); if (!L.length) return '';
   const o = L[0], due = dueItems(td).filter(isUrgent)[0], isBill = o.act === 'editBill' || o.act === 'cardSheet';
   const btn = isBill && due ? `<button class="st-b" data-act="${due.kind === 'card' ? 'cardPay' : 'billPay'}" data-id="${due.id}" data-v="${due.kind === 'card' ? due.amount : ''}">Pay</button>` : `<button class="st-b" data-act="attnSheet">See</button>`;
-  return `<section class="strip t-${o.tone}"><button class="st-t" data-act="${L.length > 1 ? 'attnSheet' : o.act}"${o.id && L.length === 1 ? ` data-id="${o.id}"` : ''}${o.v && L.length === 1 ? ` data-v="${o.v}"` : ''}><b>${esc(o.t)}${o.amt ? ' · ₹' + esc(o.amt.replace(/^₹/, '')) : ''}</b><small>${esc(o.s)}${L.length > 1 ? ` · ${L.length - 1} more to look at` : ''}</small></button>${btn}</section>`;
+  const isCard = isBill && due && due.kind === 'card';
+  return `<section class="strip t-${o.tone}"><button class="st-t" data-act="${isCard ? 'cardCheck' : L.length > 1 ? 'attnSheet' : o.act}"${isCard ? ` data-id="${due.id}"` : o.id && L.length === 1 ? ` data-id="${o.id}"` : ''}${!isCard && o.v && L.length === 1 ? ` data-v="${o.v}"` : ''}><b>${esc(o.t)}${o.amt ? ' · ₹' + esc(o.amt.replace(/^₹/, '')) : ''}</b><small>${esc(o.s)}${isCard ? ' · <u>Already paid?</u>' : ''}${L.length > 1 ? ` · ${L.length - 1} more` : ''}</small></button>${btn}</section>`;
 }
 function homeTodayHTML(td) {
   const tl = S.txns.filter(t => t.date === td).sort(sortTx);
@@ -2750,6 +2760,26 @@ function gcalLink(title, date, freq, details, b) {
   const rr = freq === 'custom' && b ? `RRULE:FREQ=${{ day: 'DAILY', week: 'WEEKLY', month: 'MONTHLY', year: 'YEARLY' }[b.unit] || 'MONTHLY'};INTERVAL=${Math.max(1, parseInt(b.every, 10) || 1)}` : { monthly: 'RRULE:FREQ=MONTHLY', '2m': 'RRULE:FREQ=MONTHLY;INTERVAL=2', '3m': 'RRULE:FREQ=MONTHLY;INTERVAL=3', '6m': 'RRULE:FREQ=MONTHLY;INTERVAL=6', yearly: 'RRULE:FREQ=YEARLY' }[freq];
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${date.replace(/-/g, '')}/${addDays(date, 1).replace(/-/g, '')}&details=${encodeURIComponent(details)}` + (rr ? `&recur=${encodeURIComponent(rr)}` : '');
 }
+
+/* ---------------- "I've already paid this card bill" ---------------- */
+function cardCheckHTML(id) {
+  const a = accById(id); if (!a || !hasCycle(a)) return head('Card bill') + '<div class="sh-body">Add the statement and due dates for this card first.</div>';
+  const td = today(), c = cardStatus(a, td);
+  const pays = S.txns.filter(t => t.date <= td && t.date >= addDays(td, -60) && ((t.type === 'transfer' && t.toAccountId === a.id) || (t.accountId === a.id && t.type === 'income'))).sort(sortTx);
+  const before = pays.filter(t => t.date <= c.st), last = pays[0];
+  let h = head(`${a.name} bill`) + '<div class="sh-body">';
+  h += `<div class="cc-view"><div><span>Bill date</span><b>${fmtDate(c.st)}</b><small>day ${a.stmtDay} of every month</small></div><div><span>Due date</span><b>${fmtDate(c.due)}</b><small>day ${a.dueDay}</small></div>
+    <div><span>Bill amount</span><b>${money(c.billed)}</b><small>${c.src ? 'from your statement' : 'worked out from your entries'}</small></div><div><span>Paid after the bill date</span><b>${money(c.paid)}</b><small>${c.paid ? '' : 'nothing yet'}</small></div>
+    <div class="cc-left"><span>Hisaab thinks is still due</span><b>${money(c.remaining)}</b></div></div>`;
+  if (before.length && c.remaining >= 1) { const p0 = before[0];
+    h += `<div class="banner warn">${ic('info')}<div><p>You paid <b>${money(p0.amount)}</b> on <b>${fmtDate(p0.date)}</b>, before ${fmtShort(c.st)}, the bill date set for this card. Hisaab counted it towards the previous bill. If that payment was for this bill, your card's bill date is probably earlier than day ${a.stmtDay}. Check it on your statement and fix it once below; every future bill will then be right.</p></div></div>`; }
+  if (pays.length) h += `<section class="sec"><div class="sec-h"><h2>Payments to this card, last 60 days</h2></div><div class="card rows">${pays.map(t => `<button class="rowi" data-act="editTx" data-id="${t.id}"><span class="ico">${ic('swap', 18)}</span><span class="tt"><b>${esc(t.payee || 'Card payment')}</b><small>${fmtDate(t.date)}${t.date <= c.st ? ' · before this bill' : ' · counted for this bill'}</small></span><b class="num">${money(t.amount)}</b></button>`).join('')}</div></section>`;
+  else h += `<p class="small muted" style="margin:0;font-weight:600">No payment to this card is recorded in the last 60 days. If you paid it, add the payment as a transfer from your bank account to ${esc(a.name)}.</p>`;
+  h += `<div class="cc-acts"><button class="btn primary block" data-act="cardMarkPaid" data-id="${a.id}">${ic('check', 18)} This bill is paid. Stop showing it</button>
+    <button class="btn ghost block" data-act="editAccount" data-id="${a.id}">${ic('calendar', 17)} Fix the bill date and due date</button>
+    <button class="btn ghost block" data-act="billEntry" data-id="${a.id}">${ic('edit', 17)} Enter the amount from my statement</button></div>`;
+  return h + '</div>';
+}
 function cardHTML(id) {
   const a = accById(id); if (!a) return head('Card') + '<div class="sh-body">This card was deleted.</div>';
   const td = today(), out = Math.max(0, -balAt(a.id, td));
@@ -2782,7 +2812,7 @@ function cardHTML(id) {
     <div class="chips"><button class="btn sm primary" data-act="chargesAdd" data-id="${a.id}">Review and add</button><button class="btn sm ghost" data-act="chargesNone" data-id="${a.id}">Not charged</button></div></div>`;
   h += `<div class="card pad" style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><b>Unbilled</b><div class="small muted" style="font-weight:600">Spent since ${fmtShort(c.st)}. Goes on the ${fmtShort(c.nx)} bill.</div></div><b class="num" style="font:700 18px var(--f-display)">${money(c.unbilled)}</b></div>` + util;
   if (c.remaining >= 1) h += `<div class="two"><button class="btn primary" data-act="cardPay" data-id="${a.id}" data-v="${c.remaining}">Pay ${tileAmt(c.remaining)}</button>${c.minLeft >= 1 ? `<button class="btn ghost" data-act="cardPay" data-id="${a.id}" data-v="${c.minLeft}">Pay minimum</button>` : `<button class="btn ghost" data-act="cardPay" data-id="${a.id}" data-v="">Other amount</button>`}</div>`;
-  h += `<div class="chips"><button class="chip" data-act="billEntry" data-id="${a.id}">${ic('edit', 16)} Enter bill from statement</button><a class="chip" href="${gcalLink(a.name + ' bill due', c.due, 'monthly', 'Credit card payment due. Open Hisaab to see the amount.')}" target="_blank" rel="noopener">${ic('calendar', 16)} Remind me in Google Calendar</a><button class="chip" data-act="accTxList" data-id="${a.id}">${ic('list', 16)} Transactions</button></div>`;
+  h += `<div class="chips">${c.remaining >= 1 ? `<button class="chip" data-act="cardCheck" data-id="${a.id}">${ic('check', 16)} Already paid?</button>` : ''}<button class="chip" data-act="billEntry" data-id="${a.id}">${ic('edit', 16)} Enter bill from statement</button><a class="chip" href="${gcalLink(a.name + ' bill due', c.due, 'monthly', 'Credit card payment due. Open Hisaab to see the amount.')}" target="_blank" rel="noopener">${ic('calendar', 16)} Remind me in Google Calendar</a><button class="chip" data-act="accTxList" data-id="${a.id}">${ic('list', 16)} Transactions</button></div>`;
   const hist = []; let s = stmtOnOrBefore(a, addDays(c.st, -1)); const first = a.cycleFrom ? stmtOnOrBefore(a, a.cycleFrom) : '';
   for (let i = 0; i < 6 && (!first || s >= first); i++, s = stmtOnOrBefore(a, addDays(s, -1))) {
     const inf = statementInfo(a, s); if (inf.billed < 1) continue;
@@ -5523,6 +5553,8 @@ const A = {
   loanSheet: () => openLoan(),
   lpSrc: b => { const x = loanSources().find(y => y.id === b.dataset.v); if (!x) return; Object.assign(LP, { src: x.id, PStr: String(Math.round(x.P)), emiStr: x.emi ? String(x.emi) : LP.emiStr, rate: String((S.settings.loanRates || {})[x.id] ?? x.rate ?? LP.rate) }); const s2 = sheets.find(y => y.wrap._kind === 'loan'); if (s2) setSheet(s2.wrap, loanHTML()); },
   lpMode: b => { LP.mode = b.dataset.v; const s2 = sheets.find(y => y.wrap._kind === 'loan'); if (s2) setSheet(s2.wrap, loanHTML()); },
+  cardCheck: b => { const w = openSheet(cardCheckHTML(b.dataset.id), { cls: 'tall' }); w._kind = 'cardcheck'; },
+  cardMarkPaid: b => { const a = accById(b.dataset.id); if (!a) return; const c = cardStatus(a); a.bills ||= {}; a.bills[c.st] = { total: round2(c.paid), min: 0, due: c.due, src: 'marked paid' }; save(); while (sheets.length) closeSheet(); render(); toast(`${a.name} bill marked as paid`); },
   barPick: b => { ui.barSel = b.dataset.v; ui.barMore = ''; render(); },
   barMore: b => { ui.barMore = ui.barMore === b.dataset.v ? '' : b.dataset.v; render(); },
   avgSheet: () => { const w = openSheet(avgSheetHTML(), { cls: 'tall' }); w._kind = 'avg'; },
