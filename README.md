@@ -10,6 +10,11 @@ Install on your phone in 5 minutes (same way as Sadhana 180):
 
 Installing gives Hisaab its own icon and long-press shortcuts (Add expense, Ask Hisaab, Add income, Lend & borrow, Bills due).
 
+## New in 3.1: exact credit card statements
+- On a card's bill date, Home shows **"ICICI CREDIT CARD statement · Out on 14 Oct · enter the exact amount"** with an **Enter** button. Type the total (and minimum, if you like) from the statement, SMS or card app, and Hisaab uses that exact amount for the bill, due date and reminders. **Use the estimate** keeps Hisaab's own calculation instead.
+- If you pay an exact amount with paise (such as ₹14,897.33) before entering it, Hisaab takes that as the statement amount and marks the bill paid.
+- A payment made after the last due date counts as clearing the bill. **Already paid?** on the bill strip shows the dates and payments Hisaab used, with one-tap fixes.
+
 ## New in 3.0: Big & simple
 - **New look (Leaf theme).** Home now opens on one big number, what you spent today, with this month's total and a bar for every day of the month: tap any bar to see that day's total and biggest spends, then "Open day" for every entry. Change the theme any time in More › Theme.
 - **Daily average box.** Shows your day-to-day spending per day this week compared with last month, for example "₹841 a day, ▼31% vs ₹1,217 in Sep". Tap it for **Your averages**: per day and per month for this week, last 7 days, this month, last month, last 3 and 6 months and this year; month by month; by quarter; by category against your usual; and which day of the week you spend the most. EMIs, investments and once-a-year payments are left out so they don't distort the averages.

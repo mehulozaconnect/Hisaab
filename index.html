@@ -1016,7 +1016,7 @@ body:has(#qdock) #fab{display:none}
 
 <script>
 'use strict';
-const APP_VERSION = '3.0.7';
+const APP_VERSION = '3.1.0';
 
 /* ---------------- helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
@@ -1364,9 +1364,16 @@ function txRow(t) {
 /* ---- Home ---- */
 
 /* ---------------- calm Home: one "Needs attention" card ---------------- */
+function stmtAsk(a, td = today()) { // a new statement is out and you haven't told Hisaab its exact amount yet
+  if (!a || a.archived || !hasCycle(a)) return null; const c = cardStatus(a, td);
+  if (c.src || ['none', 'paid', 'synced'].includes(c.state) || (a.cycleFrom && c.st < a.cycleFrom) || (S.settings.stmtSkip || {})[a.id + '|' + c.st]) return null;
+  return c;
+}
 function attnItems(td = today()) {
-  const mk = td.slice(0, 7), out = [];
-  for (const it of dueItems(td).filter(isUrgent)) out.push({ tone: it.days < 0 ? 'red' : 'amber', rank: it.days < 0 ? 0 : 1, act: it.kind === 'card' ? 'cardSheet' : 'editBill', id: it.id,
+  const mk = td.slice(0, 7), out = [], asked = new Set();
+  for (const a of activeAccounts()) { const c = stmtAsk(a, td); if (!c) continue; asked.add(a.id);
+    out.push({ tone: c.days < 0 ? 'red' : 'amber', rank: c.days < 0 ? 0 : 1, act: 'billEntry', id: a.id, t: `${a.name} statement`, s: `Out on ${fmtShort(c.st)} · enter the exact amount`, amt: '' }); }
+  for (const it of dueItems(td).filter(isUrgent)) if (!(it.kind === 'card' && asked.has(it.id))) out.push({ tone: it.days < 0 ? 'red' : 'amber', rank: it.days < 0 ? 0 : 1, act: it.kind === 'card' ? 'cardSheet' : 'editBill', id: it.id,
     t: it.name, s: it.days < 0 ? `Overdue by ${-it.days} day${it.days < -1 ? 's' : ''}` : it.days === 0 ? 'Due today' : it.days === 1 ? 'Due tomorrow' : `Due in ${it.days} days`, amt: it.amount ? compact(it.amount) : '' });
   for (const c of S.categories.filter(c => c.type === 'expense' && c.budget > 0)) { const sp = catSpent(c.id, mk); if (sp >= c.budget) out.push({ tone: 'red', rank: 2, act: 'tab', v: 'budgets', t: `${c.name} over budget`, s: `by ${rupees(sp - c.budget)}`, amt: '' }); }
   for (const a of spikeAlerts(td).filter(a => !(S.settings.spikeHidden || {})[a.key])) { if (out.some(o => o.t === `${a.c.name} over budget`)) continue; out.push({ tone: 'amber', rank: 3, act: 'tab', v: 'stats', t: a.level === 'new' ? `New spending on ${a.c.name}` : `${a.c.name} ${a.pct}% above usual`, s: a.drv ? `Mostly ${a.drv}` : 'Compared with your usual month', amt: '' }); }
@@ -1434,6 +1441,7 @@ function homeStripHTML(td) {
   const L = attnItems(td); if (!L.length) return '';
   const o = L[0], due = dueItems(td).filter(isUrgent)[0], isBill = o.act === 'editBill' || o.act === 'cardSheet';
   const btn = isBill && due ? `<button class="st-b" data-act="${due.kind === 'card' ? 'cardPay' : 'billPay'}" data-id="${due.id}" data-v="${due.kind === 'card' ? due.amount : ''}">Pay</button>` : `<button class="st-b" data-act="attnSheet">See</button>`;
+  if (o.act === 'billEntry') return `<section class="strip t-${o.tone}"><button class="st-t" data-act="billEntry" data-id="${o.id}"><b>${esc(o.t)}</b><small>${esc(o.s)}${L.length > 1 ? ` · ${L.length - 1} more` : ''}</small></button><button class="st-b" data-act="billEntry" data-id="${o.id}">Enter</button></section>`;
   const isCard = isBill && due && due.kind === 'card';
   return `<section class="strip t-${o.tone}"><button class="st-t" data-act="${isCard ? 'cardCheck' : L.length > 1 ? 'attnSheet' : o.act}"${isCard ? ` data-id="${due.id}"` : o.id && L.length === 1 ? ` data-id="${o.id}"` : ''}${!isCard && o.v && L.length === 1 ? ` data-v="${o.v}"` : ''}><b>${esc(o.t)}${o.amt ? ' · ₹' + esc(o.amt.replace(/^₹/, '')) : ''}</b><small>${esc(o.s)}${isCard ? ' · <u>Already paid?</u>' : ''}${L.length > 1 ? ` · ${L.length - 1} more` : ''}</small></button>${btn}</section>`;
 }
@@ -2840,11 +2848,12 @@ function cardHTML(id) {
 }
 function billEntryHTML(a) {
   const c = cardStatus(a);
-  return head('Bill from statement') + `<div class="sh-body"><p class="small muted" style="margin:0;font-weight:600">Copy these from the ${fmtDate(c.st)} statement or the bank's bill SMS. Hisaab then uses them for this bill instead of its own calculation.</p>
-    <div class="field"><label for="beTotal">Total amount due (₹)</label><input type="text" inputmode="decimal" id="beTotal" value="${c.billed || ''}"></div>
-    <div class="field"><label for="beMin">Minimum amount due (₹)</label><input type="text" inputmode="decimal" id="beMin" value="${c.min || ''}"></div>
+  const ent = !!c.src && c.src !== 'payment';
+  return head(`${a.name} statement`) + `<div class="sh-body"><p class="small muted" style="margin:0;font-weight:600">Your statement of <b>${fmtDate(c.st)}</b> is out. Copy the amounts from the statement, the bank's SMS or email, or the card app. Hisaab then uses them exactly, so there's no guessing.</p>
+    <div class="field"><label for="beTotal">Total amount due (₹)</label><input type="text" inputmode="decimal" id="beTotal" value="${ent ? c.billed : ''}" placeholder="e.g. 14897.33"><small class="muted" style="font-weight:600">Hisaab's estimate from your entries: ${money(c.calc ?? c.billed)}</small></div>
+    <div class="field"><label for="beMin">Minimum amount due (₹, optional)</label><input type="text" inputmode="decimal" id="beMin" value="${ent && c.min ? c.min : ''}"></div>
     <div class="field"><label for="beDue">Payment due date</label><input type="date" id="beDue" value="${c.due}"></div></div>
-    <div class="sh-foot">${c.src ? `<button class="btn ghost" data-act="beReset" data-id="${a.id}">Use calculated</button>` : ''}<button class="btn primary" data-act="beSave" data-id="${a.id}">Save bill</button></div>`;
+    <div class="sh-foot">${c.src ? `<button class="btn ghost" data-act="beReset" data-id="${a.id}">Use the estimate</button>` : `<button class="btn ghost" data-act="beSkip" data-id="${a.id}">Use the estimate</button>`}<button class="btn primary" data-act="beSave" data-id="${a.id}">Save</button></div>`;
 }
 function chargesHTML(a) {
   const pc = pendingCharges(a); if (!pc) return head('Card charges') + '<div class="sh-body"><p>Nothing to add.</p></div>';
@@ -5652,9 +5661,10 @@ const A = {
   tfAmtSet: b => { TF.amountStr = String(b.dataset.v); TF.panel = null; refreshTx(); },
   kp: b => padKey(b.dataset.v),
   billEntry: b => { const w = openSheet(billEntryHTML(accById(b.dataset.id))); w._kind = 'billentry'; },
-  beSave: b => { const a = accById(b.dataset.id), c = cardStatus(a); const total = evalAmount($('#beTotal').value), min = $('#beMin').value.trim() ? evalAmount($('#beMin').value) : null, due = $('#beDue').value || c.due;
+  beSkip: b => { const a = accById(b.dataset.id), c = cardStatus(a); (S.settings.stmtSkip ||= {})[a.id + '|' + c.st] = 1; save(); closeSheet(); afterManagerChange(); toast(`Using Hisaab's estimate of ${money(c.billed)}`); },
+  beSave: b => { if (!$('#beTotal').value.trim()) return toast('Enter the total amount due from the statement'); const a = accById(b.dataset.id), c = cardStatus(a); const total = evalAmount($('#beTotal').value), min = $('#beMin').value.trim() ? evalAmount($('#beMin').value) : null, due = $('#beDue').value || c.due;
     if (isNaN(total) || total < 0) return toast('Check the total amount'); if (min !== null && isNaN(min)) return toast('Check the minimum amount');
-    (a.bills ||= {})[c.st] = { total, min, due, src: 'manual' }; save(); closeSheet(); afterManagerChange(); toast('Bill updated from your statement'); },
+    (a.bills ||= {})[c.st] = { total, min, due, src: 'manual' }; save(); closeSheet(); afterManagerChange(); toast(`${a.name}: bill of ${money(total)} saved`); },
   beReset: b => { const a = accById(b.dataset.id), c = cardStatus(a); if (a.bills) delete a.bills[c.st]; save(); closeSheet(); afterManagerChange(); toast('Using the calculated bill'); },
   chargesAdd: b => openSheet(chargesHTML(accById(b.dataset.id))),
   chargesNone: b => { const a = accById(b.dataset.id), pc = pendingCharges(a); if (pc) (a.chargeLog ||= {})[pc.st] = 'none'; save(); afterManagerChange(); toast('Noted. No charges added.'); },
