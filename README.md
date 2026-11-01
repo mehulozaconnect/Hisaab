@@ -10,6 +10,16 @@ Install on your phone in 5 minutes (same way as Sadhana 180):
 
 Installing gives Hisaab its own icon and long-press shortcuts (Add expense, Ask Hisaab, Add income, Lend & borrow, Bills due).
 
+## New in 3.2: a budget that plans itself and helps you save
+Open the **Budgets** tab.
+- **Plan my budget.** Hisaab looks at your last 3 months (money in, fixed costs like rent, EMIs, insurance and SIPs, and everyday spending), you pick how much to save (10–30%), and it sets a limit for every category. It trims wants such as food delivery, eating out, shopping and short cab rides, never essentials. Pick a savings goal and the savings are shown filling it up.
+- **Left to spend this week.** Your everyday budget becomes a weekly allowance that resets every Monday, with a bar for each day and how much you can spend per day for the rest of the week.
+- **Needs vs wants** for the last 30 days.
+- **Saving challenges** from your own spending: no food delivery Mon–Thu, chai and snacks under a daily limit, a weekly shopping limit, auto or metro instead of short cab rides. Each shows a tick for every day you kept it, your streak, and the money saved. Late fees and overlapping subscriptions are pointed out too.
+- **A nudge before you spend.** When a new expense breaks a challenge, goes over a budget, uses up the week's allowance or is the 5th order from the same place this month, the entry screen says so and offers **I'll skip it**.
+- **Weekly check-in** on Sunday: what went well, what to watch, next week's allowance and bills, and a button to move what you didn't spend into your goal.
+- **Monthly recalibration** in the first days of each month: last month's result against your goal, and budgets lowered where you came in under two months running or set to a realistic level where you kept going over, each with its reason. Nothing changes until you tap **Accept changes**.
+
 ## New in 3.1: exact credit card statements
 - On a card's bill date, Home shows **"ICICI CREDIT CARD statement · Out on 14 Oct · enter the exact amount"** with an **Enter** button. Type the total (and minimum, if you like) from the statement, SMS or card app, and Hisaab uses that exact amount for the bill, due date and reminders. **Use the estimate** keeps Hisaab's own calculation instead.
 - If you pay an exact amount with paise (such as ₹14,897.33) before entering it, Hisaab takes that as the statement amount and marks the bill paid.
