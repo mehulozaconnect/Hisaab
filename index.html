@@ -1045,6 +1045,7 @@ body:has(#qdock) #fab{display:none}
 .chip.on{background:var(--ink)!important;color:var(--bg)!important;border-color:var(--ink)!important}
 .sb-rows{padding:8px 16px!important}
 .sb-rh{display:grid;gap:2px;padding:6px 0 8px}.sb-rh small{color:var(--muted);font-weight:600;font-size:12.5px}
+.sb-ok{font-size:13px;font-weight:600;color:var(--income);background:color-mix(in srgb,var(--income) 12%,transparent);border-radius:12px;padding:8px 10px;margin-bottom:6px}
 .sb-warn{font-size:13px;font-weight:600;color:#9A6410;background:color-mix(in srgb,#F2C14E 18%,transparent);border-radius:12px;padding:8px 10px;margin-bottom:6px}
 .sb-r{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
 .sb-ci{width:34px;height:34px;border-radius:11px;background:var(--surface-2);display:grid;place-items:center;font-size:17px}
@@ -1097,7 +1098,7 @@ body:has(#qdock) #fab{display:none}
 
 <script>
 'use strict';
-const APP_VERSION = '3.2.0';
+const APP_VERSION = '3.2.1';
 
 /* ---------------- helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
@@ -1713,39 +1714,55 @@ const SB_REASON = { 'Food Delivery': 'Fewer food deliveries', Restaurants: 'Eat 
   'Holiday Expenses': 'Smaller trips', Hotels: 'Smaller trips', Flights: 'Smaller trips', Gifts: 'Smaller gifts', Celebrations: 'Smaller celebrations', 'Toys & Games': 'Fewer toys', 'Kids Activities': 'Fewer paid activities', 'Furniture & Decor': 'Fewer home buys' };
 const SB = () => (S.smart ||= { plan: null, ch: [], weeks: {}, recal: {}, skips: [] });
 const sbSub = t => subName(catById(t.catId), t.subId) || '';
-function sbIsWant(t) { const c = catById(t.catId), sn = sbSub(t); if (!c) return false; if (sn) return !SB_NEED.has(sn) && (SB_WANT_CATS.test(c.name) || !!SB_REASON[sn] || /Late Fees|Interest/.test(sn)); return SB_WANT_CATS.test(c.name); }
+const SB_NEED_CATS = /^(Bills & Utilities|Health|Education|Home|EMI & Loans|Insurance & Investments|Transport|Food & Dining|Fees & Charges)$/;
+const SB_LUX = /astro|jyotish|jyotis|pandit|kundli|kundali|tarot|numerolog|vastu|horoscope|palm ?read|gemstone|ratna|crystal|healing|reiki/i;
+function sbIsWant(t) { const c = catById(t.catId), sn = sbSub(t); if (!c) return true; if (SB_LUX.test((t.payee || '') + ' ' + (t.notes || '') + ' ' + sn + ' ' + c.name)) return true;
+  if (sn) return !SB_NEED.has(sn); if (/Late Fees|Interest/.test(sn)) return true; return !SB_NEED_CATS.test(c.name); }
 function sbIsFixed(t, lumps) { const c = catById(t.catId); return !!(t.emiId || t.billId || t.feeFor || lumps.has(t.id) || (c && SPIKE_SKIP.test(c.name)) || SB_FIXED_SUBS.has(sbSub(t))); }
 const sbNice = v => v <= 0 ? 0 : v < 1000 ? Math.ceil(v / 50) * 50 : v < 10000 ? Math.round(v / 100) * 100 : Math.round(v / 500) * 500;
 const sbFirst = () => S.txns.reduce((m, t) => t.date < m ? t.date : m, today());
 // what a normal month looks like: last 3 full months with entries (or the days so far, scaled to a month)
 function sbBase(td = today()) {
   const first = sbFirst(), mk = td.slice(0, 7), lumps = lumpIds(); let months = [];
-  for (let i = 1; i <= 3; i++) { const m = shiftMonth(mk, -i); if (first <= m + '-05') months.push({ from: m + '-01', to: monthEnd(m), f: 1 }); }
-  if (!months.length) { const to = addDays(td, -1), n = daysBetween(first, to) + 1; if (n < 14) return null; months = [{ from: first, to, f: 30.44 / n }]; }
-  const k = months.length; let inc = 0, fixed = 0; const cats = {};
-  for (const M of months) for (const t of S.txns) { if (t.date < M.from || t.date > M.to) continue;
+  for (let i = 1; i <= 3; i++) { const m = shiftMonth(mk, -i); if (first <= m + '-05') months.push({ m, from: m + '-01', to: monthEnd(m), f: 1 }); }
+  if (!months.length) { const to = addDays(td, -1), n = daysBetween(first, to) + 1; if (n < 14) return null; months = [{ m: '', from: first, to, f: 30.44 / n }]; }
+  const k = months.length; let inc = 0, fixed = 0, wantAll = 0; const cats = {};
+  months.forEach((M, mi) => { for (const t of S.txns) { if (t.date < M.from || t.date > M.to) continue;
     if (t.type === 'income') { inc += t.amount * M.f; continue; } if (t.type !== 'expense') continue;
-    const fx = sbIsFixed(t, lumps), w = !fx && sbIsWant(t), c = (cats[t.catId] ||= { every: 0, fixed: 0, want: 0, subs: {} });
-    if (fx) { fixed += t.amount * M.f; c.fixed += t.amount * M.f; } else { c.every += t.amount * M.f; if (w) { c.want += t.amount * M.f; const sn = sbSub(t); c.subs[sn] = (c.subs[sn] || 0) + t.amount * M.f; } } }
+    const fx = sbIsFixed(t, lumps), w = !fx && sbIsWant(t), c = (cats[t.catId] ||= { every: 0, fixed: 0, want: 0, wantM: Array(k).fill(0), everyM: Array(k).fill(0), subs: {}, pay: {}, big: null, wantTotal: 0 });
+    if (fx) { fixed += t.amount * M.f; c.fixed += t.amount * M.f; continue; }
+    c.every += t.amount * M.f; c.everyM[mi] += t.amount * M.f;
+    if (w) { c.want += t.amount * M.f; c.wantM[mi] += t.amount * M.f; c.wantTotal += t.amount; wantAll += t.amount * M.f; const sn = sbSub(t); c.subs[sn] = (c.subs[sn] || 0) + t.amount * M.f;
+      if (mi === 0) { const pk = txTitle(t); c.pay[pk] = (c.pay[pk] || 0) + t.amount; } if (!c.big || t.amount > c.big.amount) c.big = { amount: t.amount, label: txTitle(t), date: t.date }; } } });
   for (const c of Object.values(cats)) { c.every /= k; c.fixed /= k; c.want /= k; for (const s in c.subs) c.subs[s] /= k; }
   const every = Object.values(cats).reduce((s, c) => s + c.every, 0);
-  return { months: k, label: months[0].f === 1 ? `${MON[+months[k - 1].from.slice(5, 7) - 1]}${k > 1 ? '–' + MON[+months[0].from.slice(5, 7) - 1] : ''}` : `since ${fmtShort(first)}`, inc: round2(inc / k), fixed: round2(fixed / k), every: round2(every), cats };
+  return { months: k, lm: months[0].m, label: months[0].f === 1 ? `${MON[+months[k - 1].from.slice(5, 7) - 1]}${k > 1 ? '–' + MON[+months[0].from.slice(5, 7) - 1] : ''}` : `since ${fmtShort(first)}`, inc: round2(inc / k), fixed: round2(fixed / k), every: round2(every), wantShare: every ? wantAll / k / every : 0, cats };
 }
+// Hisaab's plan: keep essentials, cut wants. One-off big spends and spikes are called out and not treated as normal.
 function sbPropose(base, pct) {
-  const goal = round100(base.inc * pct / 100), avail = base.inc - base.fixed - goal, trim = Math.max(0, base.every - avail), rows = [];
-  const list = Object.entries(base.cats).map(([id, c]) => ({ id, c, cat: catById(id) })).filter(x => x.cat && x.cat.type === 'expense' && !x.cat.archived && (x.c.every >= 300 || x.c.fixed >= 300) && !SPIKE_SKIP.test(x.cat.name));
-  const capOf = x => x.c.want * .35, cap = list.reduce((s, x) => s + capOf(x), 0), used = Math.min(trim, cap);
-  for (const x of list) { const cut = cap > 0 ? used * capOf(x) / cap : 0, every = sbNice(Math.max(0, x.c.every - cut)), top = Object.entries(x.c.subs).sort((a, b) => b[1] - a[1])[0];
-    rows.push({ id: x.id, cat: x.cat, usual: round2(x.c.every + x.c.fixed), every, fixed: round2(x.c.fixed), limit: sbNice(every + x.c.fixed), cut: Math.round(cut), why: cut >= 100 && top ? (SB_REASON[top[0]] || 'Trim a little') : x.c.fixed > x.c.every ? 'Mostly fixed payments' : 'Kept as it is' }); }
-  rows.sort((a, b) => b.cut - a.cut || b.usual - a.usual);
-  const short = Math.max(0, trim - cap), maxGoal = Math.max(0, round100(base.inc - base.fixed - (base.every - cap)));
-  return { pct, goal, trim: Math.round(trim), short: Math.round(short), maxGoal, rows, flex: rows.reduce((s, r) => s + r.every, 0), now: Math.round(base.inc - base.fixed - base.every) };
+  const goal = round100(base.inc * pct / 100), rows = [], k = base.months, deep = base.wantShare > .35 ? .3 : .2;
+  const list = Object.entries(base.cats).map(([id, c]) => ({ id, c, cat: catById(id) })).filter(x => x.cat && x.cat.type === 'expense' && !x.cat.archived && !SPIKE_SKIP.test(x.cat.name) && (x.c.every >= 300 || x.c.fixed >= 300 || x.c.wantM[0] >= 1000));
+  for (const x of list) { const c = x.c, need = Math.max(0, c.every - c.want), notes = []; let wb = c.want;
+    if (c.big && c.big.amount >= 3000 && c.big.amount >= c.wantTotal * .4) { wb = Math.max(0, (c.wantTotal - c.big.amount) / k); notes.push(`${rupees(c.big.amount)} on ${c.big.label} in ${MON[+c.big.date.slice(5, 7) - 1]}`); }
+    const prev = k > 1 ? c.wantM.slice(1).reduce((s, v) => s + v, 0) / (k - 1) : null, pays = Object.entries(c.pay).sort((a, b) => b[1] - a[1]);
+    if (prev !== null && c.wantM[0] > prev * 1.3 && c.wantM[0] - prev >= 1000) { notes.unshift(`${rupees(Math.round(c.wantM[0]))} last month${pays.length ? `, mostly ${pays.slice(0, 2).map(([n]) => n).join(' and ')}` : ''}; usually about ${rupees(Math.round(prev))}`); wb = Math.min(wb, prev); }
+    const topSub = Object.entries(c.subs).sort((a, b) => b[1] - a[1])[0], topPay = pays[0], floor = notes.length ? c.wantM[0] * .15 : 0;
+    rows.push({ id: x.id, cat: x.cat, c, need, wb, floor, wantLim: Math.max(wb * (1 - deep), floor), usual: round2(c.every + c.fixed), last: round2(c.everyM[0] + c.fixed), fixed: round2(c.fixed), notes,
+      tip: topSub && SB_REASON[topSub[0]] ? SB_REASON[topSub[0]] : topPay ? `Less on ${topPay[0]}` : 'Trim a little' }); }
+  const save = () => base.inc - base.fixed - rows.reduce((s, r) => s + r.need + r.wantLim, 0);
+  let gap = goal - save(); // still short of the goal: cut wants deeper, down to 40% of their normal level
+  if (gap > 0) { const lo = r => Math.max(r.wb * .4, r.floor * .5), room = rows.reduce((s, r) => s + Math.max(0, r.wantLim - lo(r)), 0); const f = room > 0 ? Math.min(1, gap / room) : 0; for (const r of rows) r.wantLim -= Math.max(0, r.wantLim - lo(r)) * f; }
+  for (const r of rows) { r.every = sbNice(r.need + r.wantLim); r.limit = sbNice(r.every + r.fixed); r.cut = Math.round(r.usual - r.limit); r.cutLast = Math.round(r.last - r.limit);
+    r.why = r.notes.length ? r.notes[0] : r.cut >= 100 || r.cutLast >= 100 ? r.tip : r.c.want < 100 ? 'Essentials, kept' : 'Already low, kept'; }
+  rows.sort((a, b) => Math.max(b.cut, b.cutLast) - Math.max(a.cut, a.cutLast) || b.usual - a.usual);
+  const planSave = Math.round(base.inc - base.fixed - rows.reduce((s, r) => s + r.every, 0)), short = Math.max(0, goal - planSave);
+  return { pct, goal, planSave, short, maxGoal: Math.max(0, round100(planSave)), rows, flex: rows.reduce((s, r) => s + r.every, 0), now: Math.round(base.inc - base.fixed - base.every), cutTotal: Math.round(rows.reduce((s, r) => s + Math.max(0, r.usual - r.limit), 0)), trim: Math.round(rows.reduce((s, r) => s + Math.max(0, r.cut), 0)) };
 }
 let SBP = null; // plan sheet state
 function planSheetHTML() {
   const base = sbBase();
   if (!base) return head('Plan my budget') + `<div class="sh-body"><div class="card empty"><b>Add two weeks of entries first</b><span>Hisaab plans your budget from how you actually spend. Keep adding your expenses for about two weeks, then come back here.</span></div></div>`;
-  if (!SBP) { const cur = SB().plan, saveNow = base.inc > 0 ? Math.round((base.inc - base.fixed - base.every) / base.inc * 100) : 0; SBP = { pct: cur ? cur.pct : Math.min(30, Math.max(10, Math.ceil((saveNow + 4) / 5) * 5)), goalId: cur ? cur.goalId : ((S.goals || []).find(g => !goalInfo(g).done) || {}).id || '' }; }
+  if (!SBP) { const cur = SB().plan, saveNow = base.inc > 0 ? Math.round((base.inc - base.fixed - base.every) / base.inc * 100) : 0; SBP = { pct: cur ? cur.pct : Math.min(30, Math.max(10, Math.ceil((saveNow + 1) / 5) * 5)), goalId: cur ? cur.goalId : ((S.goals || []).find(g => !goalInfo(g).done) || {}).id || '' }; }
   const P = sbPropose(base, SBP.pct), R = v => rupees(Math.round(v));
   let h = head('Plan my budget') + '<div class="sh-body">';
   h += `<p class="small muted" style="margin:0;font-weight:600">From your ${base.months > 1 ? `last ${base.months} months (${base.label})` : base.label}:</p>`;
@@ -1753,9 +1770,9 @@ function planSheetHTML() {
     <div><span>Everyday spending</span><small>Your usual month</small><b>${R(base.every)}</b></div><div><span>Left over</span><small>What you've been saving</small><b class="${P.now >= 0 ? 'ok' : 'bad'}">${R(P.now)}${base.inc ? `<em>${Math.round(P.now / base.inc * 100)}%</em>` : ''}</b></div></div>`;
   if (!base.inc) h += `<div class="banner warn">${ic('info')}<div><p>Add your salary or other income as an entry so Hisaab can work out how much you can save.</p></div></div>`;
   h += `<div><div class="sb-k">How much do you want to save each month?</div><div class="chips">${[10, 15, 20, 25, 30].map(p => `<button class="chip${SBP.pct === p ? ' on' : ''}" data-act="sbPct" data-v="${p}">${p}% · ${compact(base.inc * p / 100)}</button>`).join('')}</div></div>`;
-  h += `<div class="card sb-rows"><div class="sb-rh"><b>${P.trim > 0 ? `To save ${R(P.goal)}, trim ${R(P.trim - P.short)} a month` : `You can save ${R(P.goal)} without cutting anything`}</b><small>${P.trim > 0 ? 'Hisaab trims wants like delivery and shopping, never essentials' : 'Limits are set at your usual spending, so you notice if it creeps up'}</small></div>
-    ${P.short > 0 ? `<div class="sb-warn">Even after trimming, this goal is ${R(P.short)} short. The most you can save without cutting essentials is about ${R(P.maxGoal)} a month.</div>` : ''}
-    ${P.rows.map(r => `<div class="sb-r"><span class="sb-ci">${esc(r.cat.icon || '•')}</span><span class="tt"><b>${esc(r.cat.name)}</b><small>${esc(r.why)}</small></span><span class="sb-v"><b>${R(r.limit)}</b>${r.cut >= 100 ? `<s>${R(r.usual)}</s>` : '<small>usual</small>'}</span></div>`).join('')}</div>`;
+  h += `<div class="card sb-rows"><div class="sb-rh"><b>Hisaab's plan saves ${R(P.planSave)} a month${base.inc ? ` (${Math.round(P.planSave / base.inc * 100)}%)` : ''}</b><small>${P.cutTotal >= 100 ? `${R(P.cutTotal)} less than your usual month. Essentials are kept; wants, one-off splurges and spikes are cut.` : 'Your spending is already lean; limits are set at your usual level.'}</small></div>
+    ${P.short > 0 ? `<div class="sb-warn">That is ${R(P.short)} short of a ${P.pct}% goal even after cutting wants to the bone. ${R(P.maxGoal)} a month is realistic; pick a lower % or reduce a fixed cost.</div>` : P.planSave > P.goal + 500 ? `<div class="sb-ok">More than your ${P.pct}% goal of ${R(P.goal)}. Keep the extra as a cushion or raise your goal.</div>` : ''}
+    ${P.rows.map(r => `<div class="sb-r"><span class="sb-ci">${esc(r.cat.icon || '•')}</span><span class="tt"><b>${esc(r.cat.name)}</b><small>${esc(r.why)}</small></span><span class="sb-v"><b>${R(r.limit)}</b>${r.cutLast >= 100 && r.cutLast > r.cut ? `<s>${R(r.last)}</s><small>last month</small>` : r.cut >= 100 ? `<s>${R(r.usual)}</s><small>usual</small>` : '<small>usual</small>'}</span></div>`).join('')}</div>`;
   const goals = (S.goals || []).filter(g => !g.accountId);
   h += `<div class="field"><label for="sbGoal">Put the savings towards</label><select id="sbGoal" data-sbgoal>${'<option value="">No particular goal</option>' + goals.map(g => `<option value="${g.id}"${g.id === SBP.goalId ? ' selected' : ''}>${esc(g.icon || '')} ${esc(g.name)}</option>`).join('')}</select>${goals.length ? '' : '<small class="muted" style="font-weight:600">Add a savings goal in More › Savings goals to see the money pile up.</small>'}</div>`;
   return h + `</div><div class="sh-foot"><button class="btn primary block" data-act="sbUsePlan">${ic('check', 18)} Use this plan</button></div>`;
@@ -1801,6 +1818,11 @@ function sbLeaks(td = today()) {
   if (fM >= 50) out.push({ k: 'fees', act: 'billsSheet', icon: '💳', t: 'Late fees and interest', d: `About ${rupees(Math.round(fM))} a month in card interest and late fees.`, tip: 'Pay card bills by the due date; set autopay for at least the minimum', save: Math.round(fM) });
   const ott = subscriptions().filter(x => /OTT|Music/.test(x.sub || '') || /netflix|hotstar|prime|sony|zee5|jiocinema|spotify|youtube/i.test(x.name));
   if (ott.length >= 2) { const cheap = ott.reduce((a, b) => a.monthly < b.monthly ? a : b); out.push({ k: 'ott', act: 'subsSheet', icon: '📺', t: 'Overlapping subscriptions', d: `${ott.map(x => x.name).slice(0, 4).join(', ')}: ${rupees(Math.round(ott.reduce((s, x) => s + x.monthly, 0)))} a month.`, tip: `Keep the ones you watch; dropping ${cheap.name} saves the most easily`, save: Math.round(cheap.monthly) }); }
+  const base = sbBase(td), has = k => out.some(x => x.k === k); if (base && base.lm) for (const r of sbPropose(base, 0).rows) { if (!r.notes.length || r.c.wantM[0] < 1500) continue;
+    if ((r.cat.name === 'Shopping' && has('shop')) || (r.cat.name === 'Food & Dining' && (has('delivery') || has('snacks')))) continue; const sv = Math.round(r.c.wantM[0] - r.wantLim); if (sv < 500) continue;
+    const pays = Object.entries(r.c.pay).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([n, v]) => `${n} ${rupees(Math.round(v))}`).join(', ');
+    const tp = Object.entries(r.c.pay).sort((a, b) => b[1] - a[1])[0];
+    out.push({ k: 'cat:' + r.id, act: 'planOpen', icon: r.cat.icon || '•', t: /^(Others?|Miscellaneous)$/i.test(r.cat.name) && tp ? tp[0] : r.cat.name, d: `${r.notes[0]}.${pays && !r.notes[0].includes('mostly') ? ` Last month: ${pays}.` : ''}`, tip: `Decide a monthly limit, about ${rupees(sbNice(r.wantLim))}, and stick to it`, save: sv }); }
   return out.filter(x => x.save >= 100).sort((a, b) => b.save - a.save);
 }
 function sbStartCh(k) {
