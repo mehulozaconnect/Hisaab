@@ -11,6 +11,13 @@ Install on your phone in 5 minutes (same way as Sadhana 180):
 Installing gives Hisaab its own icon and long-press shortcuts (Add expense, Ask Hisaab, Add income, Lend & borrow, Bills due).
 
 
+
+## 3.4 — Analytics
+- Analysis has three tabs: Overview, Trends, Payees.
+- Overview opens with "What stands out": spending vs the same days last month, the everyday category that rose or fell most, your most frequent payee, small spends under ₹200, biggest single spend, weekend vs weekday, share of income kept.
+- Trends: last 12 months of spending with your usual month, this year vs last year, fixed / needs / wants by month with wants % and % kept, and a 6-month trend line for every category (tap for sub-categories).
+- Payees: where the money goes by shop or person, with how often, average per visit and share of spending.
+
 ## 3.3 — Clean lines
 - New look: no boxes, thin dividing lines, more space, one accent colour. Works in every theme, including the dark ones.
 - Undo button right after you save an entry.

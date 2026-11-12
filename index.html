@@ -1176,6 +1176,23 @@ input[type=search],select,.field input,.field textarea{border-radius:999px;borde
 .cu-sep{height:1px;background:var(--line);margin:14px 0 0}
 #toast.undo{pointer-events:auto;display:flex;align-items:center;gap:14px;text-align:left;border-radius:999px;padding:8px 8px 8px 18px}
 #toast.undo button{flex:none;border:0;background:var(--bg);color:var(--ink);font-weight:800;font-size:13.5px;border-radius:999px;padding:7px 14px}
+
+/* analytics 3.4 */
+.an-tabs{margin-top:-4px}
+.ins{padding:2px 0!important}
+.ins-r{display:grid;grid-template-columns:34px 1fr;gap:10px;align-items:start;padding:12px 0;border-bottom:1px solid var(--line)}
+.ins-r:last-child{border-bottom:0}
+.ins-i{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:17px;background:var(--surface-2)}
+.ins-r b{display:block;font-weight:600;font-size:14.5px;line-height:1.35}.ins-r b b{display:inline;font-weight:800}
+.ins-r small{display:block;margin-top:2px;color:var(--muted);font-weight:600;font-size:12.5px}
+.ins-r.bad b b{color:var(--expense)}
+.tr-l{display:flex;align-items:center;gap:12px;margin-top:5px}
+.tr-l .spark{flex:none}
+.trow{grid-template-columns:32px minmax(0,1fr)!important}
+.trow .subrows{grid-column:1/-1;padding-left:42px}
+.trow .subrows .num{display:inline-flex;align-items:center;gap:8px}
+.stack{width:100%;height:auto;display:block;margin-top:6px}
+.catrow .nm small{font-size:11px;font-weight:700;margin-left:1px}
 </style>
 </head>
 <body>
@@ -1194,7 +1211,7 @@ input[type=search],select,.field input,.field textarea{border-radius:999px;borde
 
 <script>
 'use strict';
-const APP_VERSION = '3.3.0';
+const APP_VERSION = '3.4.0';
 
 /* ---------------- helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
@@ -2127,13 +2144,97 @@ function barSVG(pts, opts = {}) {
   if (opts.avg > 0) { const y = pt + ph * (1 - opts.avg / max); s += `<line class="avg-line" x1="${pl}" x2="${W - pr}" y1="${y}" y2="${y}"/><text class="avg-label" x="${W - pr}" y="${y - 5}" text-anchor="end">avg ${compact(opts.avg)}</text>`; }
   return s + '</svg>';
 }
+
+/* ================= Analytics 3.4: insights, trends, payees ================= */
+function anPrev(P, r) { // the period just before, same length (for a month: the same days of last month)
+  if (ui.statsPeriod === 'month' || ui.statsPeriod === 'last') { const pm = shiftMonth(P.start.slice(0, 7), -1), e = addDays(pm + '-01', r.days - 1); return { start: pm + '-01', end: e > monthEnd(pm) ? monthEnd(pm) : e, label: ui.statsPeriod === 'month' ? `the same ${r.days} days of ${MON[+pm.slice(5) - 1]}` : monthLabel(pm) }; }
+  return { start: addDays(P.start, -r.days), end: addDays(P.start, -1), label: 'the period before' };
+}
+function payeeStats(from, to) {
+  const m = {};
+  for (const t of S.txns) { if (t.type !== 'expense' || t.date < from || t.date > to) continue;
+    const name = txTitle(t), k = normKey(name), x = m[k] ||= { name, n: 0, total: 0, last: '', catId: t.catId }; x.n++; x.total += t.amount; if (t.date > x.last) { x.last = t.date; x.catId = t.catId; } }
+  return Object.values(m).map(x => ({ ...x, total: round2(x.total), avg: x.total / x.n }));
+}
+function anInsights(P, r) {
+  const q = anPrev(P, r), pr = computeStats(q.start, q.end), out = [], to = r.effEnd;
+  if (pr.days && pr.exp > 0) { let up = null, dn = null; const lumps = lumpIds(), ev = (f, t) => { const o = {}; for (const x of S.txns) if (x.type === 'expense' && x.date >= f && x.date <= t && !sbIsFixed(x, lumps)) o[x.catId] = (o[x.catId] || 0) + x.amount; return o; }, ca = ev(P.start, to), cb = ev(q.start, q.end);
+    for (const id of new Set([...Object.keys(ca), ...Object.keys(cb)])) { const c = catById(id); if (!c || SPIKE_SKIP.test(c.name)) continue; const a = ca[id] || 0, b = cb[id] || 0, d = a - b; if (!up || d > up.d) up = { c, a, b, d }; if (!dn || d < dn.d) dn = { c, a, b, d }; }
+    const tot = r.exp - pr.exp;
+    out.push({ i: tot > 0 ? '📈' : '📉', t: `You spent <b>${rupees(Math.abs(tot))} ${tot > 0 ? 'more' : 'less'}</b> than ${esc(q.label)}`, s: `${rupees(r.exp)} now vs ${rupees(pr.exp)}`, bad: tot > 0 });
+    if (up && up.d >= 300) out.push({ i: up.c.icon, t: `Everyday <b>${esc(up.c.name)}</b> went up the most: +${rupees(up.d)}`, s: `${rupees(up.a)} vs ${rupees(up.b)}`, bad: true });
+    if (dn && dn.d <= -300) out.push({ i: dn.c.icon, t: `<b>${esc(dn.c.name)}</b> came down the most: −${rupees(-dn.d)}`, s: `${rupees(dn.a)} vs ${rupees(dn.b)}` }); }
+  const pay = payeeStats(P.start, to), freq = pay.filter(x => x.n >= 3).sort((a, b) => b.n - a.n || b.total - a.total)[0];
+  if (freq) out.push({ i: catById(freq.catId)?.icon || '🧾', t: `<b>${esc(freq.name)}</b> ${freq.n} times, ${rupees(freq.total)} in all`, s: `about ${rupees(Math.round(freq.avg))} each time` });
+  const small = S.txns.filter(t => t.type === 'expense' && t.date >= P.start && t.date <= to && t.amount < 200);
+  if (small.length >= 8) { const st = small.reduce((a, t) => a + t.amount, 0); out.push({ i: '🪙', t: `Small spends under ₹200 added up to <b>${rupees(st)}</b>`, s: `${small.length} entries · ${Math.round(st / Math.max(1, r.exp) * 100)}% of all spending` }); }
+  const big = S.txns.filter(t => t.type === 'expense' && t.date >= P.start && t.date <= to && !t.emiId && !SPIKE_SKIP.test(catById(t.catId)?.name || '')).sort((a, b) => b.amount - a.amount)[0];
+  if (big && big.amount >= r.exp * .1) out.push({ i: catById(big.catId)?.icon || '💸', t: `Biggest single spend: <b>${esc(txTitle(big))}</b> ${rupees(big.amount)}`, s: `${fmtDate(big.date)} · ${Math.round(big.amount / r.exp * 100)}% of the period` });
+  if (r.days >= 14) { let we = 0, wd = 0, nwe = 0, nwd = 0; for (let i = 0, d = P.start; i < r.days; i++, d = addDays(d, 1)) { const g = parseYmd(d).getDay(), v = r.byDay[d] || 0; if (g === 0 || g === 6) { we += v; nwe++; } else { wd += v; nwd++; } }
+    const a = nwe ? we / nwe : 0, b = nwd ? wd / nwd : 0; if (a > 0 && b > 0 && (a / b > 1.3 || b / a > 1.3)) out.push({ i: '📅', t: a > b ? `Weekends cost <b>${(a / b).toFixed(1)}×</b> a weekday` : `Weekdays cost <b>${(b / a).toFixed(1)}×</b> a weekend day`, s: `${rupees(Math.round(a))} a weekend day vs ${rupees(Math.round(b))} a weekday` }); }
+  if (r.inc > 0) { const rate = Math.round((r.inc - r.exp) / r.inc * 100); out.push({ i: rate >= 20 ? '🏦' : '⚠️', t: `You kept <b>${rate}%</b> of what you earned`, s: `${rupees(Math.max(0, r.inc - r.exp))} of ${rupees(r.inc)}`, bad: rate < 10 }); }
+  return out.slice(0, 6);
+}
+function insightsHTML(P, r) { const L = anInsights(P, r); if (!L.length) return '';
+  return `<section class="sec"><div class="sec-h"><h2>What stands out</h2></div><div class="card ins">${L.map(x => `<div class="ins-r${x.bad ? ' bad' : ''}"><span class="ins-i">${x.i}</span><span><b>${x.t}</b><small>${x.s}</small></span></div>`).join('')}</div></section>`; }
+function anMonths(n) { const mk = today().slice(0, 7), a = []; for (let i = n - 1; i >= 0; i--) a.push(shiftMonth(mk, -i)); return a; }
+function anMonthData(months) {
+  const lumps = lumpIds(), td = today(), D = {}; months.forEach(m => D[m] = { exp: 0, inc: 0, fixed: 0, need: 0, want: 0, cats: {}, subs: {} });
+  for (const t of S.txns) { if (t.date > td) continue; const x = D[t.date.slice(0, 7)]; if (!x) continue;
+    if (t.type === 'income') { x.inc += t.amount; continue; } if (t.type !== 'expense') continue;
+    x.exp += t.amount; x.cats[t.catId] = (x.cats[t.catId] || 0) + t.amount; const sk = t.catId + '|' + (t.subId || ''); x.subs[sk] = (x.subs[sk] || 0) + t.amount;
+    if (sbIsFixed(t, lumps)) x.fixed += t.amount; else if (sbIsWant(t)) x.want += t.amount; else x.need += t.amount; }
+  return D;
+}
+function sparkSVG(vals, cur) { const mx = Math.max(1, ...vals), w = 7, g = 3, H = 26;
+  return `<svg class="spark" viewBox="0 0 ${vals.length * (w + g)} ${H}" width="${vals.length * (w + g)}" height="${H}">${vals.map((v, i) => { const h = Math.max(2, v / mx * H); return `<rect x="${i * (w + g)}" y="${H - h}" width="${w}" height="${h}" rx="1.5" fill="${i === vals.length - 1 && cur ? 'var(--line)' : 'var(--c-out)'}"${i === vals.length - 1 && cur ? '' : ` opacity="${.45 + .55 * (i + 1) / vals.length}"`}/>`; }).join('')}</svg>`; }
+function stackSVG(months, D) { const W = 340, H = 160, pl = 40, pb = 20, pt = 10, ph = H - pt - pb, n = months.length, bw = (W - pl) / n * .62, step = (W - pl) / n;
+  const mx = niceMax(Math.max(1, ...months.map(m => D[m].exp))), K = [['fixed', 'var(--muted)'], ['need', 'var(--c-in)'], ['want', 'var(--c-out)']];
+  let g = `<line x1="${pl}" x2="${W}" y1="${pt + ph}" y2="${pt + ph}" stroke="var(--line)"/><text x="${pl - 6}" y="${pt + 4}" text-anchor="end" font-size="10" fill="var(--muted)">${compact(mx)}</text><text x="${pl - 6}" y="${pt + ph / 2 + 4}" text-anchor="end" font-size="10" fill="var(--muted)">${compact(mx / 2)}</text>`;
+  months.forEach((m, i) => { let y = pt + ph; const x = pl + i * step + (step - bw) / 2; for (const [k, col] of K) { const h = D[m][k] / mx * ph; if (h > 0) { y -= h; g += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" fill="${col}"/>`; } }
+    g += `<text x="${(x + bw / 2).toFixed(1)}" y="${H - 5}" text-anchor="middle" font-size="10" fill="var(--muted)">${MON[+m.slice(5) - 1]}</text>`; });
+  return `<svg viewBox="0 0 ${W} ${H}" class="stack" role="img" aria-label="Fixed, needs and wants by month">${g}</svg>`; }
+function trendsHTML() {
+  const td = today(), mk = td.slice(0, 7), y = td.slice(0, 4), first = S.txns.filter(t => t.type === 'expense' && t.date <= td).reduce((m, t) => t.date < m ? t.date : m, td).slice(0, 7);
+  const M12 = anMonths(12).filter(m => m >= first), D = anMonthData(M12);
+  const ly = String(+y - 1), ytd = rangeTotals(y + '-01-01', td).exp, lytd = rangeTotals(ly + '-01-01', ly + td.slice(4)).exp;
+  const full = M12.slice(0, -1).filter(m => D[m].exp > 0), avg = full.length ? full.reduce((a, m) => a + D[m].exp, 0) / full.length : 0;
+  const best = full.slice().sort((a, b) => D[a].exp - D[b].exp)[0], worst = full.slice().sort((a, b) => D[b].exp - D[a].exp)[0];
+  let h = `<section class="sec"><div class="tiles"><div class="tile"><div class="k">${y} so far</div><div class="v">${tileAmt(ytd)}</div><div class="s">${lytd > 0 ? `${ytd > lytd ? '▲' : '▼'} ${Math.abs(Math.round((ytd / lytd - 1) * 100))}% vs ${ly}` : 'spent'}</div></div><div class="tile"><div class="k">Usual month</div><div class="v">${tileAmt(Math.round(avg))}</div><div class="s">avg of ${full.length} months</div></div><div class="tile"><div class="k">Lightest</div><div class="v">${best ? tileAmt(D[best].exp) : '—'}</div><div class="s">${best ? monthLabel(best) : ''}</div></div></div></section>`;
+  h += chartCard('Spending, last 12 months', barSVG(M12.map(m => ({ value: D[m].exp, label: MON[+m.slice(5) - 1], tick: true, tip: `${monthLabel(m)}: ${rupees(D[m].exp)}${m === mk ? ' (so far)' : ''}` })), { avg, label: 'Spending by month' }), worst ? `Heaviest: ${monthLabel(worst)} · ${rupees(D[worst].exp)}. Tap a bar to see the amount` : 'Tap a bar to see the amount');
+  const M6 = M12.slice(-7), F = M6.slice(0, -1);
+  h += `<section class="card chart"><div class="chart-h"><b>Fixed, needs and wants</b><span class="small muted" style="font-weight:700">by month</span></div><div class="legend"><span><i style="background:var(--muted)"></i>Fixed (EMIs, rent, SIPs)</span><span><i style="background:var(--c-in)"></i>Needs</span><span><i style="background:var(--c-out)"></i>Wants</span></div>${stackSVG(M6, D)}
+    <div style="overflow-x:auto"><table class="mtable"><thead><tr><th>Month</th><th>Wants</th><th>Wants %</th><th>Kept</th></tr></thead><tbody>${M6.slice().reverse().map(m => { const x = D[m], fl = x.need + x.want; return `<tr><td>${MON[+m.slice(5) - 1]} ${m.slice(2, 4)}</td><td>${rupees(x.want)}</td><td>${fl ? Math.round(x.want / fl * 100) + '%' : '—'}</td><td>${x.inc ? Math.round((x.inc - x.exp) / x.inc * 100) + '%' : '—'}</td></tr>`; }).join('')}</tbody></table></div></section>`;
+  // category trends: last 6 full months + this month so far
+  const nF = F.length, half = nF >= 6 ? 3 : 1;
+  const rows = S.categories.filter(c => c.type === 'expense').map(c => { const v = M6.map(m => D[m].cats[c.id] || 0), f = v.slice(0, -1), a = nF ? f.reduce((s, x) => s + x, 0) / nF : 0;
+      let ch = null; if (nF >= 2) { const r = f.slice(-half), p = f.slice(0, -half), ra = r.reduce((s, x) => s + x, 0) / r.length, pa = p.reduce((s, x) => s + x, 0) / p.length; ch = pa > 0 ? ra / pa - 1 : ra > 0 ? 'new' : 0; }
+      return { c, v, a, ch, now: v[v.length - 1] }; })
+    .filter(x => x.a >= 100 || x.now >= 100).sort((a, b) => b.a - a.a);
+  if (rows.length) h += `<section class="sec"><div class="sec-h"><h2>Category trends</h2><span class="small muted" style="font-weight:700">6 months · tap for details</span></div><div class="card pad" style="padding-block:4px">${rows.map(x => { const open = ui.expandCat === 't' + x.c.id, tr = x.ch === null ? '' : x.ch === 'new' ? '<span class="st-warn">new</span>' : Math.abs(x.ch) < .1 ? '<span class="muted">steady</span>' : x.ch > 0 ? `<span class="st-over">▲ ${Math.round(x.ch * 100)}%</span>` : `<span class="st-ok">▼ ${Math.round(-x.ch * 100)}%</span>`;
+    const subs = open ? Object.keys(D[mk].subs).concat(...M6.map(m => Object.keys(D[m].subs))).filter((k, i, a) => k.startsWith(x.c.id + '|') && a.indexOf(k) === i).map(k => ({ k, v: M6.map(m => D[m].subs[k] || 0) })).sort((a, b) => b.v.reduce((s, q) => s + q, 0) - a.v.reduce((s, q) => s + q, 0)) : [];
+    return `<button class="catrow trow" data-act="expandCat" data-id="t${x.c.id}">${catIcon(x.c, true)}<span><span class="nm"><span>${esc(x.c.name)}</span><span class="num">${rupees(Math.round(x.a))}<small class="muted">/mo</small></span></span><span class="tr-l">${sparkSVG(x.v, true)}<span class="small">${tr}</span><span class="small muted">now ${rupees(x.now)}</span></span></span>
+      ${open ? `<span class="subrows">${subs.map(sb => `<div><span>${esc(subName(x.c, sb.k.split('|')[1]) || 'No sub-category')}</span><span class="num">${sparkSVG(sb.v, true)} ${rupees(Math.round(sb.v.slice(0, -1).reduce((s, q) => s + q, 0) / Math.max(1, nF)))}/mo</span></div>`).join('')}</span>` : ''}</button>`; }).join('')}</div><p class="small muted" style="margin:6px 2px 0;font-weight:600">${nF >= 6 ? 'Arrow compares the last 3 months with the 3 before.' : `Arrow compares ${MON[+F[nF - 1].slice(5) - 1]} with the months before it.`} The pale last bar is this month so far. /mo is the average of full months.</p></section>`;
+  return h;
+}
+function payeesHTML(P, r) {
+  const L = payeeStats(P.start, r.effEnd).sort((a, b) => b.total - a.total); if (!L.length) return `<div class="card empty"><b>No spending in this period</b></div>`;
+  const top = L.slice(0, 30), mx = top[0].total, freq = L.slice().sort((a, b) => b.n - a.n)[0], one = L.filter(x => x.n === 1).length;
+  return `<section class="sec"><div class="tiles"><div class="tile"><div class="k">Places & people</div><div class="v">${L.length}</div><div class="s">${one} only once</div></div><div class="tile"><div class="k">Most visited</div><div class="v" style="font-size:16px">${esc(freq.name)}</div><div class="s">${freq.n} times</div></div><div class="tile"><div class="k">Top 5 share</div><div class="v">${Math.round(top.slice(0, 5).reduce((s, x) => s + x.total, 0) / r.exp * 100)}%</div><div class="s">of spending</div></div></div></section>
+  <section class="sec"><div class="sec-h"><h2>Where your money goes</h2><span class="small muted" style="font-weight:700">by payee</span></div><div class="card pad" style="padding-block:4px">${top.map(x => `<div class="catrow" style="cursor:default">${catIcon(catById(x.catId), true)}<span><span class="nm"><span>${esc(x.name)}</span><span class="num">${rupees(x.total)}</span></span><span class="hbar" style="display:block"><i style="width:${(x.total / mx * 100).toFixed(1)}%"></i></span><span class="small muted" style="font-weight:600">${x.n > 1 ? `${x.n} times · about ${rupees(Math.round(x.avg))} each · ` : ''}last ${fmtShort(x.last)}</span></span><span class="small muted num" style="font-weight:800">${Math.round(x.total / r.exp * 100)}%</span></div>`).join('')}</div></section>`;
+}
+
 function viewStats() {
   const P = periodRange(ui.statsPeriod); const r = computeStats(P.start, P.end); const td = today();
   let h = `<header class="top"><div><div class="brand-sm">Analysis</div><div class="sub">${esc(P.label)}${r.days ? ` · ${r.days} day${r.days > 1 ? 's' : ''}` : ''}</div></div></header>
-  <div class="chips scroll">${PERIODS.map(([k, l]) => `<button class="chip${ui.statsPeriod === k ? ' on' : ''}" data-act="period" data-v="${k}">${l}</button>`).join('')}</div>`;
+  <div class="seg an-tabs" style="--n:3">${[['overview', 'Overview'], ['trends', 'Trends'], ['payees', 'Payees']].map(([k, l]) => `<button class="${(ui.anTab || 'overview') === k ? 'on' : ''}" data-act="anTab" data-v="${k}">${l}</button>`).join('')}</div>`;
+  if (ui.anTab === 'trends') return h.replace(esc(P.label) + (r.days ? ` · ${r.days} day${r.days > 1 ? 's' : ''}` : ''), 'Last 12 months') + trendsHTML();
+  h += `<div class="chips scroll">${PERIODS.map(([k, l]) => `<button class="chip${ui.statsPeriod === k ? ' on' : ''}" data-act="period" data-v="${k}">${l}</button>`).join('')}</div>`;
   if (ui.statsPeriod === 'custom') h += `<div class="two"><div class="field"><label for="cFrom">From</label><input type="date" id="cFrom" value="${ui.custom.from}" data-on="customFrom"></div><div class="field"><label for="cTo">To</label><input type="date" id="cTo" value="${ui.custom.to}" data-on="customTo"></div></div>`;
   h += `<div class="stat-links"><button class="sl s2" data-act="reviewOpen">${ic('stats', 18)} Month review</button><button class="sl s1" data-act="calOpen">${ic('calendar', 18)} Calendar</button><button class="sl s3" data-act="tagsSheet">${ic('tag', 18)} Trips</button></div>`;
   if (!r.days) return h + `<div class="card empty"><b>This period has not started yet</b></div>`;
+  if (ui.anTab === 'payees') return h + payeesHTML(P, r);
+  h += insightsHTML(P, r);
   const avgD = r.exp / r.days, avgW = avgD * 7, avgM = r.exp / (r.days / 30.4375);
   h += `<section class="sec"><div class="sec-h"><h2>Average spending</h2></div><div class="tiles">
     <div class="tile"><div class="k">Per day</div><div class="v">${money(Math.round(avgD))}</div><div class="s">${r.days} days</div></div>
@@ -6208,6 +6309,7 @@ const A = {
   txAllToggle: () => { ui.txMonth = ui.txMonth === 'all' ? today().slice(0, 7) : 'all'; render(); },
   txType: b => { ui.txType = b.dataset.v; render(); },
   period: b => { ui.statsPeriod = b.dataset.v; ui.expandCat = ''; render(); },
+  anTab: b => { ui.anTab = b.dataset.v; ui.expandCat = ''; render(); window.scrollTo(0, 0); },
   expandCat: b => { ui.expandCat = ui.expandCat === b.dataset.id ? '' : b.dataset.id; render(); },
   theme: b => { S.settings.theme = b.dataset.v; save(); applyTheme(); render(); },
   exportSheet: () => { exportPreset(ui.tab === 'txns' && ui.txMonth !== 'all' ? 'month' : 'month'); if (ui.tab === 'txns' && ui.txMonth !== 'all') { EX.from = ui.txMonth + '-01'; EX.to = monthEnd(ui.txMonth); EX.preset = ui.txMonth === today().slice(0, 7) ? 'month' : ''; }
