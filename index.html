@@ -1098,7 +1098,7 @@ body:has(#qdock) #fab{display:none}
 
 <script>
 'use strict';
-const APP_VERSION = '3.2.1';
+const APP_VERSION = '3.2.2';
 
 /* ---------------- helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
@@ -1457,7 +1457,7 @@ function attnItems(td = today()) {
     out.push({ tone: c.days < 0 ? 'red' : 'amber', rank: c.days < 0 ? 0 : 1, act: 'billEntry', id: a.id, t: `${a.name} statement`, s: `Out on ${fmtShort(c.st)} · enter the exact amount`, amt: '' }); }
   for (const it of dueItems(td).filter(isUrgent)) if (!(it.kind === 'card' && asked.has(it.id))) out.push({ tone: it.days < 0 ? 'red' : 'amber', rank: it.days < 0 ? 0 : 1, act: it.kind === 'card' ? 'cardSheet' : 'editBill', id: it.id,
     t: it.name, s: it.days < 0 ? `Overdue by ${-it.days} day${it.days < -1 ? 's' : ''}` : it.days === 0 ? 'Due today' : it.days === 1 ? 'Due tomorrow' : `Due in ${it.days} days`, amt: it.amount ? compact(it.amount) : '' });
-  for (const c of S.categories.filter(c => c.type === 'expense' && c.budget > 0)) { const sp = catSpent(c.id, mk); if (sp >= c.budget) out.push({ tone: 'red', rank: 2, act: 'tab', v: 'budgets', t: `${c.name} over budget`, s: `by ${rupees(sp - c.budget)}`, amt: '' }); }
+  for (const c of S.categories.filter(c => c.type === 'expense' && c.budget > 0)) { const sp = catSpent(c.id, mk); if (sp > c.budget + .5) out.push({ tone: 'red', rank: 2, act: 'tab', v: 'budgets', t: `${c.name} over budget`, s: `by ${rupees(sp - c.budget)}`, amt: '' }); else if (sp >= c.budget - .5) out.push({ tone: 'amber', rank: 2, act: 'tab', v: 'budgets', t: `${c.name} budget used up`, s: `${rupees(c.budget)} spent, nothing left this month`, amt: '' }); }
   for (const a of spikeAlerts(td).filter(a => !(S.settings.spikeHidden || {})[a.key])) { if (out.some(o => o.t === `${a.c.name} over budget`)) continue; out.push({ tone: 'amber', rank: 3, act: 'tab', v: 'stats', t: a.level === 'new' ? `New spending on ${a.c.name}` : `${a.c.name} ${a.pct}% above usual`, s: a.drv ? `Mostly ${a.drv}` : 'Compared with your usual month', amt: '' }); }
   out.push(...sbAttn(td));
   for (const x of warrSoon()) out.push({ tone: 'blue', rank: 4, act: 'warrSheet', t: `${x.item} warranty`, s: x.days === 0 ? 'Ends today' : `Ends in ${x.days} days`, amt: '' });
@@ -1508,7 +1508,7 @@ function homeBigHTML(td, hb) {
   const marks = [1, 8, 15, 22, 29].filter(x => x <= dim).map(x => `<span style="left:${((x - .5) / dim * 100).toFixed(2)}%"${x === dayN ? ' class="now"' : ''}>${x === 1 ? `1 ${MON[+mk.slice(5) - 1]}` : x}</span>`).join('');
   const sl = S.txns.filter(t => t.date === sel && t.type === 'expense').sort((a, b) => b.amount - a.amount), sv = sl.reduce((s, t) => s + t.amount, 0);
   const label = sel === td ? 'Today' : sel === addDays(td, -1) ? 'Yesterday' : `${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][parseYmd(sel).getDay()]}, ${fmtShort(sel)}`;
-  const detail = `<div class="bt-day"><div class="bd-h"><b>${label}</b><span>${sl.length ? `${hb ? '••••' : rupees(sv)} spent · ${sl.length} ${sl.length === 1 ? 'entry' : 'entries'}` : 'Nothing spent'}</span><button class="link" data-act="calOpen" data-v="${sel}">Open day ${ic('chevR', 13)}</button></div>${sl.length ? `<div class="bd-top">${(ui.barMore === sel ? sl : sl.slice(0, 3)).map(t => `<button data-act="editTx" data-id="${t.id}">${esc(txTitle(t))} <b>${hb ? '••' : rupees(t.amount)}</b></button>`).join('')}${sl.length > 3 ? `<button class="more" data-act="barMore" data-v="${sel}">${ui.barMore === sel ? 'Show less' : `+${sl.length - 3} more`}</button>` : ''}</div>` : ''}</div>`;
+  const detail = sel === td && !ui.barMore ? `<div class="bt-day"><div class="bd-h"><b>Today</b><span>${sl.length ? `${hb ? '••••' : rupees(sv)} spent · ${sl.length} ${sl.length === 1 ? 'entry' : 'entries'} · listed below` : 'Nothing spent yet'}</span><button class="link" data-act="calOpen" data-v="${sel}">Calendar ${ic('chevR', 13)}</button></div></div>` : `<div class="bt-day"><div class="bd-h"><b>${label}</b><span>${sl.length ? `${hb ? '••••' : rupees(sv)} spent · ${sl.length} ${sl.length === 1 ? 'entry' : 'entries'}` : 'Nothing spent'}</span><button class="link" data-act="calOpen" data-v="${sel}">Open day ${ic('chevR', 13)}</button></div>${sl.length ? `<div class="bd-top">${(ui.barMore === sel ? sl : sl.slice(0, 3)).map(t => `<button data-act="editTx" data-id="${t.id}">${esc(txTitle(t))} <b>${hb ? '••' : rupees(t.amount)}</b></button>`).join('')}${sl.length > 3 ? `<button class="more" data-act="barMore" data-v="${sel}">${ui.barMore === sel ? 'Show less' : `+${sl.length - 3} more`}</button>` : ''}</div>` : ''}</div>`;
   return `<section class="bigtoday"><button class="bt-k" data-act="toggleBal" aria-label="${hb ? 'Show' : 'Hide'} amounts">Spent today ${ic(hb ? 'eye' : 'eyeOff', 15)}</button>
     <div class="bt-v${big.length > 6 ? ' long' : ''}"><span>₹</span>${big}</div>
     <div class="bt-s">${MONTHS[+mk.slice(5) - 1]} so far <b>${hb ? '••••' : rupees(mt.exp)}</b>${mt.inc ? ` · earned ${hb ? '••••' : compact(mt.inc)}` : ''}</div>
@@ -1550,7 +1550,7 @@ function avgSheetHTML() {
   const per = (from, to) => { from = from < firstTx ? firstTx : from; if (from > to) return null; const e = everyday(from, to, L), all = rangeTotals(from, to), n = daysIn(from, to); return { day: e.total / n, month: e.total / n * 30.44, allMonth: all.exp / n * 30.44, days: n }; };
   const lm = shiftMonth(mk, -1), y = td.slice(0, 4);
   const rows = [['This week', per(weekStart(td), td)], ['Last 7 days', per(addDays(td, -6), td)], [`${MONTHS[+mk.slice(5) - 1]} so far`, per(mk + '-01', td)], [`${MONTHS[+lm.slice(5) - 1]}`, per(lm + '-01', monthEnd(lm))],
-    ['Last 3 months', per(shiftMonth(mk, -3) + '-01', monthEnd(lm))], ['Last 6 months', per(shiftMonth(mk, -6) + '-01', monthEnd(lm))], [`${y} so far`, per(y + '-01-01', td)]].filter(r => r[1]);
+    ['Last 3 months', per(shiftMonth(mk, -3) + '-01', monthEnd(lm))], ['Last 6 months', per(shiftMonth(mk, -6) + '-01', monthEnd(lm))], [`${y} so far`, per(y + '-01-01', td)]].filter(r => r[1]).filter((r, i, arr) => !arr.slice(0, i).some(q => q[1].days === r[1].days && Math.abs(q[1].day - r[1].day) < .5));
   const a = avgNow(td);
   let h = head('Your averages') + '<div class="sh-body">';
   h += `<div class="av-hero"><div><small>This week</small><b>${R(a.week)}</b><span>a day</span></div><div class="av-vs">${a.pct === null ? '' : a.pct > 0 ? `<em class="up">▲ ${a.pct}%</em>` : a.pct < 0 ? `<em class="down">▼ ${-a.pct}%</em>` : '<em>same</em>'}</div><div><small>${a.cmp === 'tm' ? 'This month' : MONTHS[+a.lm.slice(5) - 1]}</small><b>${a.last ? R(a.last) : '—'}</b><span>a day</span></div></div>`;
@@ -1700,7 +1700,7 @@ function bindTxSearch() {
 /* ---- Budgets ---- */
 function budRow(c, spent) {
   const p = c.budget ? spent / c.budget : 0; const cls = p >= 1 ? 'over' : p >= .8 ? 'warn' : '';
-  const st = p >= 1 ? `<span class="st-over">${ic('alert', 13)} Over by ${rupees(spent - c.budget)}</span>` : p >= .8 ? `<span class="st-warn">${ic('alert', 13)} ${rupees(c.budget - spent)} left</span>` : `<span class="st-ok">${rupees(c.budget - spent)} left</span>`;
+  const st = spent > c.budget + .5 ? `<span class="st-over">${ic('alert', 13)} Over by ${rupees(spent - c.budget)}</span>` : p >= 1 ? `<span class="st-over">${ic('alert', 13)} Budget used up</span>` : p >= .8 ? `<span class="st-warn">${ic('alert', 13)} ${rupees(c.budget - spent)} left</span>` : `<span class="st-ok">${rupees(c.budget - spent)} left</span>`;
   return `<button class="bud" data-act="editBudget" data-id="${c.id}">${catIcon(c, true)}<span><span class="l1"><span>${esc(c.name)}</span><span class="num">${rupees(spent)} <span class="muted">/ ${rupees(c.budget)}</span></span></span><span class="bar ${cls}" style="display:block"><i style="width:${Math.min(100, p * 100).toFixed(1)}%"></i></span><span class="l2">${st}<span>${Math.round(p * 100)}%</span></span></span></button>`;
 }
 /* ================= Smart budget: plan, weekly allowance, challenges, nudges, check-ins, recalibration ================= */
@@ -1962,7 +1962,7 @@ function viewBudgets() {
     <div class="chip" style="justify-content:center">${monthLabel(mk)}</div>
     <button class="icon-btn boxed" data-act="budMonth" data-d="1" aria-label="Next month">${ic('chevR')}</button></div>`;
   if (isCur) h += budgetsSmartHTML();
-  h += budgetCheckHTML();
+  if (!(isCur && sbPlanOn())) h += budgetCheckHTML();
   if (tot > 0) {
     const p = sp / tot; const cls = p >= 1 ? 'over' : p >= .8 ? 'warn' : '';
     const dim = parseYmd(monthEnd(mk)).getDate(); const left = isCur ? dim - parseYmd(td).getDate() + 1 : 0;
@@ -2288,7 +2288,7 @@ $('#inGallery').addEventListener('change', e => { onReceiptFile(e.target.files[0
 function accountsHTML() {
   const bal = balances();
   return head('Accounts', `<button class="icon-btn" data-act="editAccount" aria-label="Add account">${ic('plus')}</button>`) + `<div class="sh-body">
-    <p class="small muted" style="margin:0;font-weight:600">Set each account's opening balance once. For credit cards and loans, enter what you owe. Add the last 4 digits so SMS can match the right account.</p>
+    <p class="small muted" style="margin:0;font-weight:600">Set each account's opening balance once. For credit cards and loans, enter what you owe. Add the last 4 digits so one-line entries like “from account 1785” pick the right account.</p>
     <div class="card rows">${S.accounts.filter(a => a.type !== 'people').map(a => { const v = bal[a.id] || 0; return `<button class="rowi" data-act="editAccount" data-id="${a.id}"><span class="emo">${ACC_TYPES[a.type]?.icon}</span><span class="tt"><b>${esc(a.name)}${a.archived ? ' <span class="pill">Hidden</span>' : ''}${S.settings.defaultAccount === a.id ? ' <span class="pill acc-p">Default</span>' : ''}</b><small>${ACC_TYPES[a.type]?.label}${a.last4 ? ' · ••' + esc(a.last4) : ''}</small></span><span class="num" style="font-weight:800">${S.settings.hideBal ? '₹ ••••' : isLiab(a) && v < 0 ? 'Owe ' + money(-v) : money(v)}</span></button>`; }).join('')}</div></div>`;
 }
 let AF = null, AFw = null;
@@ -2362,7 +2362,7 @@ function emisHTML() {
   const plans = S.emis.map(p => { const ins = S.txns.filter(t => t.emiId === p.id); const paid = ins.filter(t => t.date <= td); const next = ins.filter(t => t.date > td).sort((a, b) => a.date.localeCompare(b.date))[0];
     return { p, ins, paid, next, left: round2(ins.filter(t => t.date > td).reduce((s, t) => s + t.amount, 0)) }; }).sort((a, b) => (a.next ? 0 : 1) - (b.next ? 0 : 1));
   const billEmis = runningEmis().filter(e => e.act === 'editBill');
-  return head('EMI plans') + `<div class="sh-body">${billEmis.length ? `<section class="sec"><div class="sec-h"><h2>Loan and bill EMIs</h2></div><div class="card" style="padding:2px 14px">${emiRowsHTML(billEmis)}</div></section>` : ''}${plans.length ? `<div class="card rows">${plans.map(x => `<button class="rowi" data-act="emiDetail" data-id="${x.p.id}"><span class="ico">${ic('repeat', 18)}</span><span class="tt"><b>${esc(x.p.title)}</b><small>${money(x.p.emi)} × ${x.p.months} · ${x.paid.length} paid${x.next ? ' · next ' + fmtShort(x.next.date) : ' · completed'}</small></span><span class="num" style="font-weight:800">${x.left ? money(x.left) : ''}</span></button>`).join('')}</div>` :
+  return head('EMI plans') + `<div class="sh-body">${billEmis.length ? `<section class="sec"><div class="sec-h"><h2>Loan and bill EMIs</h2></div><div class="card" style="padding:2px 14px">${emiRowsHTML(billEmis)}</div></section>` : ''}${plans.length ? `<div class="card rows">${plans.map(x => `<button class="rowi" data-act="emiDetail" data-id="${x.p.id}"><span class="ico">${ic('repeat', 18)}</span><span class="tt"><b>${esc(x.p.title)}</b><small>${x.paid.length}/${x.p.months} paid · ${money(x.p.emi)}${x.next ? ' · next ' + fmtShort(x.next.date) : ' · done'}</small></span><span class="num" style="font-weight:800">${x.left ? money(x.left) : ''}</span></button>`).join('')}</div>` :
     `<div class="card empty"><b>No EMI plans</b><span>When you add an expense or transfer, switch on “Convert to EMI” to split it into monthly instalments.</span></div>`}</div>`;
 }
 function emiDetailHTML(id) {
@@ -5111,7 +5111,7 @@ function reviewHTML(mk) {
   return head(`${MONTHS[+mk.slice(5) - 1]} ${mk.slice(0, 4)}`) + `<div class="sh-body"><div class="monthnav"><button class="icon-btn boxed" data-act="reviewMove" data-d="-1" aria-label="Previous month">${ic('chevL')}</button><b>Month in review</b><button class="icon-btn boxed" data-act="reviewMove" data-d="1" aria-label="Next month"${canNext ? '' : ' disabled'}>${ic('chevR')}</button></div>
     <div class="tiles3"><div class="ctile t-inc"><span>Earned</span><b class="num">${tileAmt(R.inc)}</b></div><div class="ctile t-exp"><span>Spent</span><b class="num">${tileAmt(R.exp)}</b>${R.change !== null ? `<small>${R.change > 0 ? '▲' : '▼'} ${Math.abs(R.change)}%</small>` : ''}</div><div class="ctile t-acc"><span>Saved</span><b class="num">${tileAmt(R.saved)}</b>${R.rate !== null ? `<small>${R.rate}%</small>` : ''}</div></div>
     ${pts.length ? `<ul class="rv-pts big">${pts.map(([k, t]) => `<li class="${k}">${t}</li>`).join('')}</ul>` : ''}
-    <section class="sec"><div class="sec-h"><h2>By category</h2><span class="small muted" style="font-weight:700">${R.hasPrev ? `vs ${MON[+shiftMonth(mk, -1).slice(5) - 1]}` : ''}</span></div><div class="card pad cbars">${R.cats.filter(x => x.v > 0 || x.pv > 0).map(x => `<div class="cbar two"><span class="cl">${esc(x.c ? x.c.icon + ' ' + x.c.name : 'Other')}</span><span class="cb"><i style="width:${(x.v / max * 100).toFixed(1)}%;--c:${esc(x.c?.color || '#8D99AE')}"></i>${R.hasPrev ? `<em style="left:${(x.pv / max * 100).toFixed(1)}%"></em>` : ''}</span><b class="num">${rupees(x.v)}${R.hasPrev && x.pv ? `<small class="${x.diff > 0 ? 'exp' : 'inc'}">${x.diff > 0 ? '+' : '−'}${rupees(Math.abs(x.diff))}</small>` : ''}</b></div>`).join('') || '<span class="muted">No spending</span>'}</div>
+    <section class="sec"><div class="sec-h"><h2>By category</h2><span class="small muted" style="font-weight:700">${R.hasPrev ? `vs ${MON[+shiftMonth(mk, -1).slice(5) - 1]}` : ''}</span></div><div class="card pad cbars">${R.cats.filter(x => x.v > 0 || x.pv > 0).map(x => `<div class="cbar two"><span class="cl">${esc(x.c ? x.c.icon + ' ' + x.c.name : 'Other')}</span><span class="cb"><i style="width:${(x.v / max * 100).toFixed(1)}%;--c:${esc(x.c?.color || '#8D99AE')}"></i>${R.hasPrev ? `<em style="left:${(x.pv / max * 100).toFixed(1)}%"></em>` : ''}</span><b class="num">${rupees(x.v)}${R.hasPrev && x.pv && Math.abs(x.diff) >= 1 ? `<small class="${x.diff > 0 ? 'exp' : 'inc'}">${x.diff > 0 ? '+' : '−'}${rupees(Math.abs(x.diff))}</small>` : ''}</b></div>`).join('') || '<span class="muted">No spending</span>'}</div>
       ${R.hasPrev ? '<p class="small muted" style="margin:0;font-weight:600">The thin line on each bar is the month before.</p>' : ''}</section>
     <section class="sec"><div class="sec-h"><h2>Biggest expenses</h2></div><div class="card txlist">${S.txns.filter(t => t.type === 'expense' && t.date.startsWith(mk)).sort((a, b) => b.amount - a.amount).slice(0, 5).map(txRow).join('') || '<p class="muted" style="padding:12px 0;margin:0">None</p>'}</div></section></div>`;
 }
