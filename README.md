@@ -10,6 +10,15 @@ Install on your phone in 5 minutes (same way as Sadhana 180):
 
 Installing gives Hisaab its own icon and long-press shortcuts (Add expense, Ask Hisaab, Add income, Lend & borrow, Bills due).
 
+
+## 3.3 — Clean lines
+- New look: no boxes, thin dividing lines, more space, one accent colour. Works in every theme, including the dark ones.
+- Undo button right after you save an entry.
+- Transactions: future and scheduled entries now sit in a "Coming up" section at the top, soonest first.
+- Analysis: "Where it went" comes before Net worth over time.
+- Loan planner uses your EMI plan (EMI, rate and EMIs left) when a loan has one.
+- More tab grouped into Set up, Plan & save, Look back, Data & app.
+
 ## New in 3.2: a budget that plans itself and helps you save
 Open the **Budgets** tab.
 - **Plan my budget.** Hisaab looks at your last 3 months (money in, fixed costs like rent, EMIs, insurance and SIPs, and everyday spending), you pick how much to save (10–30%), and it sets a limit for every category. It keeps essentials (rent, bills, groceries, school, health) and cuts wants: anything else, such as food delivery, eating out, shopping, cabs, outings, astrology and other personal services. A one-off splurge or a month far above your usual (for example ₹18,000 on astrology in October) is named and given a realistic limit instead of being treated as normal, even when you already meet your savings goal. Pick a savings goal and the savings are shown filling it up.
