@@ -1214,7 +1214,7 @@ input[type=search],select,.field input,.field textarea{border-radius:999px;borde
 
 <script>
 'use strict';
-const APP_VERSION = '3.4.2';
+const APP_VERSION = '3.4.3';
 
 /* ---------------- helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
@@ -2430,7 +2430,6 @@ async function saveTx(again) {
   const base = { tags: (f.tags || []).length ? f.tags.slice() : undefined, warranty: f.wOn && f.type === 'expense' ? { until: wUntil(f) || addMonths(f.date, 12), item: (f.wItem || '').trim() || f.payee.trim() } : undefined, type: f.type, accountId: f.accountId, toAccountId: f.type === 'transfer' ? f.toAccountId : '', catId: f.type === 'transfer' ? '' : f.catId, subId: f.type === 'transfer' ? '' : f.subId, payee: f.payee.trim(), taxTag: f.taxTag || '',
     fx: f.cur !== 'INR' ? { cur: f.cur, amt: evalAmount(f.amountStr), rate: f.fxRate, fee: f.fxFeeOn ? f.fxFee : 0, date: f.fxDate || f.date } : null };
   if (f.cur !== 'INR') { S.settings.recentCur = [f.cur, ...(S.settings.recentCur || []).filter(c => c !== f.cur)].slice(0, 6); }
-  const snap = f.id ? null : undoSnap();
   let msg;
   let isClaim = false, madeRep = null;
   if (f.id) { const t = S.txns.find(x => x.id === f.id); Object.assign(t, base, { amount: amt, date: f.date, time: f.time, notes: f.notes.trim(), receipt: receiptId || null, updatedAt: Date.now() }); msg = 'Changes saved';
@@ -2472,7 +2471,7 @@ async function saveTx(again) {
   if (f.receiptUrl) URL.revokeObjectURL(f.receiptUrl); f.receiptUrl = '';
   let spikeMsg = '';
   if (base.type === 'expense' && !isClaim && f.date.slice(0, 7) === today().slice(0, 7)) { const sp = spikeAlerts().find(a => a.cid === base.catId && a.level === 'over'); if (sp && !(S.settings.spikeToasted || {})[sp.key]) { (S.settings.spikeToasted ||= {})[sp.key] = 1; spikeMsg = `Saved. ${spikeText(sp)[0]} this month. ${sp.left > 0 ? `Try to stop ${sp.drv || sp.c.name} spending for the rest of the month.` : ''}`; save(); } }
-  closeSheet(); afterManagerChange(); const tmsg = madeRep ? msg : spikeMsg || warn || msg; toast(tmsg, again ? 1600 : tmsg.length > 60 ? 5000 : 2600, snap && !again ? undoTo(snap) : undefined);
+  closeSheet(); afterManagerChange(); const tmsg = madeRep ? msg : spikeMsg || warn || msg; toast(tmsg, again ? 1600 : tmsg.length > 60 ? 5000 : 2600);
   if (madeRep && madeRep.autopay && !madeRep.done && madeRep.nextDue <= today()) setTimeout(runAutopay, 2800); // catch up dates already passed
   if (f.qeIdx !== undefined && QE_LIST[f.qeIdx]) { QE_LIST.splice(f.qeIdx, 1); setTimeout(refreshQeList, 300); }
   if (again) setTimeout(() => openTx(newForm(base.type, keep)), 280);
