@@ -12,6 +12,10 @@ Installing gives Hisaab its own icon and long-press shortcuts (Add expense, Ask 
 
 
 
+
+## 3.4.1 — Fix: entries disappearing
+- After the Undo message faded, its button stayed invisible but tappable just above the one-line box. A later tap there silently undid an earlier entry. Fixed: the button goes away with the message, Undo works only for 10 seconds, and it only ever removes the entry it belongs to.
+
 ## 3.4 — Analytics
 - Analysis has three tabs: Overview, Trends, Payees.
 - Overview opens with "What stands out": spending vs the same days last month, the everyday category that rose or fell most, your most frequent payee, small spends under ₹200, biggest single spend, weekend vs weekday, share of income kept.

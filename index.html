@@ -1174,7 +1174,8 @@ input[type=search],select,.field input,.field textarea{border-radius:999px;borde
 .cu-h small{font:600 12.5px var(--f-body);color:var(--muted)}
 .cu .tx{opacity:.78}
 .cu-sep{height:1px;background:var(--line);margin:14px 0 0}
-#toast.undo{pointer-events:auto;display:flex;align-items:center;gap:14px;text-align:left;border-radius:999px;padding:8px 8px 8px 18px}
+#toast.undo.show{pointer-events:auto}
+#toast.undo{display:flex;align-items:center;gap:14px;text-align:left;border-radius:999px;padding:8px 8px 8px 18px}
 #toast.undo button{flex:none;border:0;background:var(--bg);color:var(--ink);font-weight:800;font-size:13.5px;border-radius:999px;padding:7px 14px}
 
 /* analytics 3.4 */
@@ -1211,7 +1212,7 @@ input[type=search],select,.field input,.field textarea{border-radius:999px;borde
 
 <script>
 'use strict';
-const APP_VERSION = '3.4.0';
+const APP_VERSION = '3.4.1';
 
 /* ---------------- helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
@@ -1472,7 +1473,7 @@ function applyTheme() { document.documentElement.setAttribute('data-theme', reso
 darkMQ.addEventListener?.('change', () => { if (S?.settings.theme === 'system') applyTheme(); });
 
 /* ---------------- toast ---------------- */
-function toast(msg, ms = 2800, undo) { const t = $('#toast'); t.classList.toggle('undo', !!undo); if (undo) { t.innerHTML = `<span>${esc(msg)}</span><button type="button">Undo</button>`; t.querySelector('button').onclick = () => { t.classList.remove('show', 'undo'); undo(); }; ms = Math.max(ms, 6000); } else t.textContent = msg; t.classList.add('show'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), ms); }
+function toast(msg, ms = 2800, undo) { const t = $('#toast'); t.classList.toggle('undo', !!undo); if (undo) { t.innerHTML = `<span>${esc(msg)}</span><button type="button">Undo</button>`; t.querySelector('button').onclick = () => { t.classList.remove('show', 'undo'); undo(); }; ms = Math.max(ms, 6000); } else t.textContent = msg; t.classList.add('show'); clearTimeout(t._t); t._t = setTimeout(() => { t.classList.remove('show', 'undo'); t.textContent = ''; }, ms); }
 
 /* ---------------- no autofill bar ----------------
    Chrome on Android shows a white password/card/address bar above the keyboard for every text box.
@@ -2405,7 +2406,11 @@ function createEmi(base, P, rate, n, first, notes, receiptId) {
   return plan;
 }
 const undoSnap = () => JSON.parse(JSON.stringify({ txns: S.txns, bills: S.bills, emis: S.emis, accounts: S.accounts, people: S.people || {}, payeeMap: S.payeeMap }));
-const undoTo = snap => () => { Object.assign(S, snap); save(); while (sheets.length) closeSheet(); render(); toast('Undone'); };
+const undoTo = snap => { const at = Date.now(), after = JSON.stringify(S.txns), had = new Set(snap.txns.map(t => t.id));
+  return () => { if (Date.now() - at > 10000) return;
+    if (JSON.stringify(S.txns) === after) Object.assign(S, snap); // nothing else changed: put everything back exactly
+    else S.txns = S.txns.filter(t => had.has(t.id) || !JSON.parse(after).some(a => a.id === t.id)); // other edits since: remove only what this save added
+    save(); while (sheets.length) closeSheet(); render(); toast('Undone'); }; };
 async function saveTx(again) {
   finalizeAmount(); const f = TF; const amt = f.cur !== 'INR' ? fxInr() : evalAmount(f.amountStr);
   if (f.cur !== 'INR' && !(amt > 0)) { toast(f.fxRate > 0 ? 'Enter an amount above zero' : 'Enter the exchange rate first'); return; }
