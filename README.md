@@ -13,6 +13,11 @@ Installing gives Hisaab its own icon and long-press shortcuts (Add expense, Ask 
 
 
 
+
+## 3.4.2
+- Messages no longer cover the keypad: while the add form is open they show at the top of the screen.
+- "Save & new" shows a short "saved" note with no Undo button. Undo appears only after a plain Save, for 4 seconds.
+
 ## 3.4.1 — Fix: entries disappearing
 - After the Undo message faded, its button stayed invisible but tappable just above the one-line box. A later tap there silently undid an earlier entry. Fixed: the button goes away with the message, Undo works only for 10 seconds, and it only ever removes the entry it belongs to.
 

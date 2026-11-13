@@ -1175,6 +1175,8 @@ input[type=search],select,.field input,.field textarea{border-radius:999px;borde
 .cu .tx{opacity:.78}
 .cu-sep{height:1px;background:var(--line);margin:14px 0 0}
 #toast.undo.show{pointer-events:auto}
+#toast.top{bottom:auto;top:calc(env(safe-area-inset-top,0px) + 10px);transform:translate(-50%,-12px)}
+#toast.top.show{transform:translate(-50%,0)}
 #toast.undo{display:flex;align-items:center;gap:14px;text-align:left;border-radius:999px;padding:8px 8px 8px 18px}
 #toast.undo button{flex:none;border:0;background:var(--bg);color:var(--ink);font-weight:800;font-size:13.5px;border-radius:999px;padding:7px 14px}
 
@@ -1212,7 +1214,7 @@ input[type=search],select,.field input,.field textarea{border-radius:999px;borde
 
 <script>
 'use strict';
-const APP_VERSION = '3.4.1';
+const APP_VERSION = '3.4.2';
 
 /* ---------------- helpers ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
@@ -1473,7 +1475,7 @@ function applyTheme() { document.documentElement.setAttribute('data-theme', reso
 darkMQ.addEventListener?.('change', () => { if (S?.settings.theme === 'system') applyTheme(); });
 
 /* ---------------- toast ---------------- */
-function toast(msg, ms = 2800, undo) { const t = $('#toast'); t.classList.toggle('undo', !!undo); if (undo) { t.innerHTML = `<span>${esc(msg)}</span><button type="button">Undo</button>`; t.querySelector('button').onclick = () => { t.classList.remove('show', 'undo'); undo(); }; ms = Math.max(ms, 6000); } else t.textContent = msg; t.classList.add('show'); clearTimeout(t._t); t._t = setTimeout(() => { t.classList.remove('show', 'undo'); t.textContent = ''; }, ms); }
+function toast(msg, ms = 2800, undo) { const t = $('#toast'); t.classList.toggle('undo', !!undo); t.classList.toggle('top', sheets.length > 0); if (undo) { t.innerHTML = `<span>${esc(msg)}</span><button type="button">Undo</button>`; t.querySelector('button').onclick = () => { t.classList.remove('show', 'undo'); undo(); }; ms = Math.max(ms, 4000); } else t.textContent = msg; t.classList.add('show'); clearTimeout(t._t); t._t = setTimeout(() => { t.classList.remove('show', 'undo'); t.textContent = ''; }, ms); }
 
 /* ---------------- no autofill bar ----------------
    Chrome on Android shows a white password/card/address bar above the keyboard for every text box.
@@ -2470,7 +2472,7 @@ async function saveTx(again) {
   if (f.receiptUrl) URL.revokeObjectURL(f.receiptUrl); f.receiptUrl = '';
   let spikeMsg = '';
   if (base.type === 'expense' && !isClaim && f.date.slice(0, 7) === today().slice(0, 7)) { const sp = spikeAlerts().find(a => a.cid === base.catId && a.level === 'over'); if (sp && !(S.settings.spikeToasted || {})[sp.key]) { (S.settings.spikeToasted ||= {})[sp.key] = 1; spikeMsg = `Saved. ${spikeText(sp)[0]} this month. ${sp.left > 0 ? `Try to stop ${sp.drv || sp.c.name} spending for the rest of the month.` : ''}`; save(); } }
-  closeSheet(); afterManagerChange(); const tmsg = madeRep ? msg : spikeMsg || warn || msg; toast(tmsg, tmsg.length > 60 ? 5000 : 2600, snap ? undoTo(snap) : undefined);
+  closeSheet(); afterManagerChange(); const tmsg = madeRep ? msg : spikeMsg || warn || msg; toast(tmsg, again ? 1600 : tmsg.length > 60 ? 5000 : 2600, snap && !again ? undoTo(snap) : undefined);
   if (madeRep && madeRep.autopay && !madeRep.done && madeRep.nextDue <= today()) setTimeout(runAutopay, 2800); // catch up dates already passed
   if (f.qeIdx !== undefined && QE_LIST[f.qeIdx]) { QE_LIST.splice(f.qeIdx, 1); setTimeout(refreshQeList, 300); }
   if (again) setTimeout(() => openTx(newForm(base.type, keep)), 280);
